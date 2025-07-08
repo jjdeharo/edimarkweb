@@ -61,21 +61,41 @@
         </div>
     </header>
 
-    <!-- Barra de herramientas de formato -->
-    <div id="toolbar" class="bg-white p-2 rounded-lg shadow-md mb-4 flex flex-wrap items-center gap-1 border">
-        <!-- ... otros botones ... -->
-        <button class="toolbar-btn" data-format="bold" title="Negrita"><i data-lucide="bold"></i></button>
-        <button class="toolbar-btn" data-format="italic" title="Cursiva"><i data-lucide="italic"></i></button>
-        <button class="toolbar-btn" data-format="heading" title="Encabezado"><i data-lucide="heading-1"></i></button>
-        <button class="toolbar-btn" data-format="quote" title="Cita"><i data-lucide="quote"></i></button>
-        <button class="toolbar-btn" data-format="list-ul" title="Lista"><i data-lucide="list"></i></button>
-        <button class="toolbar-btn" data-format="list-ol" title="Lista numerada"><i data-lucide="list-ordered"></i></button>
-        <button class="toolbar-btn" data-format="code" title="Código"><i data-lucide="code-2"></i></button>
-        <button class="toolbar-btn" data-format="link" title="Enlace"><i data-lucide="link"></i></button>
-        <button class="toolbar-btn" data-format="image" title="Imagen"><i data-lucide="image"></i></button>
-        <button class="toolbar-btn" data-format="table" title="Tabla"><i data-lucide="table"></i></button>
-        <button class="toolbar-btn" data-format="latex-inline" title="Fórmula LaTeX (en línea)"><i data-lucide="sigma"></i></button>
-        <button class="toolbar-btn" data-format="latex-block" title="Fórmula LaTeX (bloque)"><i data-lucide="function-square"></i></button>
+    <!-- Barra de herramientas de formato (NUEVA ESTRUCTURA) -->
+    <div id="toolbar" class="bg-white p-2 rounded-lg shadow-md mb-4 flex flex-wrap items-center gap-2 border">
+        <!-- Grupo 1: Formato básico -->
+        <div class="flex items-center gap-1">
+            <button class="toolbar-btn" data-format="bold" title="Negrita"><i data-lucide="bold"></i></button>
+            <button class="toolbar-btn" data-format="italic" title="Cursiva"><i data-lucide="italic"></i></button>
+            <button class="toolbar-btn" data-format="heading" title="Encabezado"><i data-lucide="heading-1"></i></button>
+        </div>
+
+        <div class="border-l h-6 border-gray-300"></div>
+
+        <!-- Grupo 2: Bloques -->
+        <div class="flex items-center gap-1">
+            <button class="toolbar-btn" data-format="quote" title="Cita"><i data-lucide="quote"></i></button>
+            <button class="toolbar-btn" data-format="list-ul" title="Lista"><i data-lucide="list"></i></button>
+            <button class="toolbar-btn" data-format="list-ol" title="Lista numerada"><i data-lucide="list-ordered"></i></button>
+        </div>
+
+        <div class="border-l h-6 border-gray-300"></div>
+
+        <!-- Grupo 3: Inserciones -->
+        <div class="flex items-center gap-1">
+            <button class="toolbar-btn" data-format="code" title="Código"><i data-lucide="code-2"></i></button>
+            <button class="toolbar-btn" data-format="link" title="Enlace"><i data-lucide="link"></i></button>
+            <button class="toolbar-btn" data-format="image" title="Imagen"><i data-lucide="image"></i></button>
+            <button class="toolbar-btn" data-format="table" title="Tabla"><i data-lucide="table"></i></button>
+        </div>
+
+        <div class="border-l h-6 border-gray-300"></div>
+
+        <!-- Grupo 4: LaTeX -->
+        <div class="flex items-center gap-1">
+            <button class="toolbar-btn" data-format="latex-inline" title="Fórmula LaTeX (en línea)"><i data-lucide="sigma"></i></button>
+            <button class="toolbar-btn" data-format="latex-block" title="Fórmula LaTeX (bloque)"><i data-lucide="function-square"></i></button>
+        </div>
     </div>
 
     <!-- Paneles del editor -->
@@ -99,7 +119,7 @@
     <!-- Contenedor para impresión -->
     <div id="print-area" class="hidden prose max-w-none"></div>
 
-    <!-- Modal para crear tabla (NUEVO) -->
+    <!-- Modal para crear tabla -->
     <div id="table-modal-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
         <div id="table-modal" class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
             <h3 class="text-lg font-bold mb-4">Crear tabla</h3>
@@ -135,7 +155,6 @@
         const printBtn = document.getElementById('print-btn');
         const copyMdBtn = document.getElementById('copy-md-btn');
         const copyHtmlBtn = document.getElementById('copy-html-btn');
-        // Elementos del modal de la tabla
         const tableModalOverlay = document.getElementById('table-modal-overlay');
         const createTableBtn = document.getElementById('create-table-btn');
         const cancelTableBtn = document.getElementById('cancel-table-btn');
@@ -148,8 +167,8 @@
 
         const initialContent = `# ¡Bienvenido al editor!
 
-## Tablas personalizadas
-Ahora, al hacer clic en el icono de la tabla, puedes elegir el número de filas y columnas.
+## Barra de herramientas organizada
+He agrupado los botones por función para que sea más fácil encontrarlos.
 
 ## Fórmulas LaTeX (Corregido)
 Las matrices se ven como deben. Puedes usar \`\\\\\` para los saltos de línea.
@@ -214,7 +233,7 @@ c & d
                 case 'code': newText = `\`${selectedText || 'código'}\``; break;
                 case 'link': newText = `[${selectedText || 'texto del enlace'}](https://www.ejemplo.com)`; break;
                 case 'image': newText = `![${selectedText || 'texto alternativo'}](https://via.placeholder.com/150)`; break;
-                case 'table': toggleTableModal(true); return; // Abre el modal en lugar de insertar texto
+                case 'table': toggleTableModal(true); return;
                 case 'latex-inline': newText = `$${selectedText || 'E=mc^2'}$`; break;
                 case 'latex-block': newText = `\n\\[\n${selectedText || 'f(x) = x^2'}\n\\]\n`; break;
             }
@@ -225,13 +244,7 @@ c & d
 
         // --- Funcionalidad del modal de tabla ---
         function toggleTableModal(show) {
-            if (show) {
-                tableModalOverlay.classList.remove('hidden');
-                tableModalOverlay.classList.add('flex');
-            } else {
-                tableModalOverlay.classList.add('hidden');
-                tableModalOverlay.classList.remove('flex');
-            }
+            tableModalOverlay.style.display = show ? 'flex' : 'none';
         }
 
         createTableBtn.addEventListener('click', () => {
@@ -260,15 +273,68 @@ c & d
 
         // --- Funcionalidad de Archivos y Copiar ---
         openFileBtn.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (event) => { /* ... */ });
-        function saveFile(filename, content, type) { /* ... */ }
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            if (file.name.endsWith('.docx')) {
+                reader.onload = (e) => mammoth.convertToHtml({ arrayBuffer: e.target.result }).then(r => { htmlOutput.innerHTML = r.value; updateMarkdown(); }).catch(e => console.error(e));
+                reader.readAsArrayBuffer(file);
+            } else {
+                reader.onload = (e) => {
+                    if (file.name.endsWith(".html")) { htmlOutput.innerHTML = e.target.result; updateMarkdown(); } 
+                    else { markdownInput.value = e.target.result; updateHtml(); }
+                };
+                reader.readAsText(file);
+            }
+            fileInput.value = '';
+        });
+        
+        function saveFile(filename, content, type) {
+            const blob = new Blob([content], { type });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(a.href);
+        }
+        
         saveMdBtn.addEventListener('click', () => saveFile('documento.md', markdownInput.value, 'text/markdown;charset=utf-8'));
-        saveHtmlBtn.addEventListener('click', () => saveFile('documento.html', `...`, 'text/html;charset=utf-8'));
-        saveDocxBtn.addEventListener('click', async () => { /* ... */ });
-        function copyToClipboard(text, btn) { /* ... */ }
+        saveHtmlBtn.addEventListener('click', () => saveFile('documento.html', `<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"></head><body class="prose">${htmlOutput.innerHTML}</body></html>`, 'text/html;charset=utf-8'));
+        saveDocxBtn.addEventListener('click', async () => {
+            const content = `<div class="prose">${htmlOutput.innerHTML}</div>`;
+            const fileBuffer = await htmlToDocx.asBlob(content, { css: `@import url('https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css');` });
+            saveFile('documento.docx', fileBuffer, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        });
+        
+        function copyToClipboard(text, btn) {
+            const originalIcon = btn.innerHTML;
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = text;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            btn.innerHTML = '<i data-lucide="check" class="text-green-500"></i>';
+            lucide.createIcons();
+            setTimeout(() => {
+                btn.innerHTML = originalIcon;
+                lucide.createIcons();
+            }, 2000);
+        }
+        
         copyMdBtn.addEventListener('click', () => copyToClipboard(markdownInput.value, copyMdBtn));
         copyHtmlBtn.addEventListener('click', () => copyToClipboard(htmlOutput.innerHTML, copyHtmlBtn));
-        printBtn.addEventListener('click', () => { /* ... */ });
+        
+        printBtn.addEventListener('click', () => {
+            printArea.innerHTML = htmlOutput.innerHTML;
+            printArea.classList.remove('hidden');
+            window.print();
+            printArea.classList.add('hidden');
+        });
 
         // Carga inicial
         window.onload = () => {
