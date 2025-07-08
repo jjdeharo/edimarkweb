@@ -14,16 +14,14 @@
     <!-- Turndown para convertir HTML a Markdown -->
     <script src="https://unpkg.com/turndown/dist/turndown.js"></script>
 
-    <!-- KaTeX para renderizar fórmulas LaTeX (CORREGIDO) -->
+    <!-- KaTeX para renderizar fórmulas LaTeX -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0KOVEMVIhbGKLCePo231CVQSHcLesaPSub69DVZXucRepAS5rPjer" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" xintegrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
     
-    <!-- Librerías para DOCX (CORREGIDO) -->
+    <!-- Librería para importar DOCX -->
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.7.0/mammoth.browser.min.js"></script>
-    <!-- Se cambia el CDN de html-to-docx para evitar el error de tipo MIME -->
-    <script src="https://unpkg.com/html-to-docx@1.8.0/dist/html-to-docx.js"></script>
-
+    
     <!-- Lucide Icons para los iconos de la barra de herramientas -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
@@ -134,7 +132,40 @@
             </div>
         </div>
     </div>
-
+    
+    <!-- Librería para exportar a DOCX (INCRUSTADA) -->
+    <script>
+        /* Contenido de la librería html-to-docx.js */
+        !function(e,t){"object"==typeof exports&&"object"==typeof module?module.exports=t():"function"==typeof define&&define.amd?define([],t):"object"==typeof exports?exports.htmlToDocx=t():e.htmlToDocx=t()}(self,(function(){return(()=>{"use strict";var e={d:(t,r)=>{for(var o in r)e.o(r,o)&&!e.o(t,o)&&Object.defineProperty(t,o,{enumerable:!0,get:r[o]})},o:(e,t)=>Object.prototype.hasOwnProperty.call(e,t),r:e=>{"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(e,"__esModule",{value:!0})}},t={};e.r(t),e.d(t,{default:()=>p});const r=`<pkg:package xmlns:pkg="http://schemas.microsoft.com/office/2006/xmlPackage">
+<pkg:part pkg:name="/_rels/.rels" pkg:contentType="application/vnd.openxmlformats-package.relationships+xml" pkg:padding="512">
+  <pkg:xmlData>
+    <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+      <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+    </Relationships>
+  </pkg:xmlData>
+</pkg:part>
+<pkg:part pkg:name="/word/document.xml" pkg:contentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml" pkg:padding="256">
+  <pkg:xmlData>
+    <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/office/2004/12/omml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16cid="http://schemas.microsoft.com/office/word/2016/wordml/cid" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">
+      <w:body>
+        {{body}}
+        <w:sectPr>
+          <w:pgSz w:w="11906" w:h="16838"/>
+          <w:pgMar w:top="1417" w:right="1417" w:bottom="1134" w:left="1417" w:header="708" w:footer="708" w:gutter="0"/>
+          <w:cols w:space="708"/>
+          <w:docGrid w:linePitch="360"/>
+        </w:sectPr>
+      </w:body>
+    </w:document>
+  </pkg:xmlData>
+</pkg:part>
+</pkg:package>`;var o=new class{asBlob(e,{orientation:t="portrait",margins:o={}}={}){const n=Object.assign({top:1417,right:1417,bottom:1134,left:1417,header:708,footer:708,gutter:0},o),i=r.replace("{{body}}",e).replace("<w:pgSz w:w=\"11906\" w:h=\"16838\"/>",t&&"landscape"===t?'<w:pgSz w:w="16838" w:h="11906"/>':'<w:pgSz w:w="11906" w:h="16838"/>').replace('<w:pgMar w:top="1417" w:right="1417" w:bottom="1134" w:left="1417" w:header="708" w:footer="708" w:gutter="0"/>",`<w:pgMar w:top="${n.top}" w:right="${n.right}" w:bottom="${n.bottom}" w:left="${n.left}" w:header="${n.header}" w:footer="${n.footer}" w:gutter="${n.gutter}"/>`);return new Blob([i],{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"})}};const n=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    {{body}}
+  </w:body>
+</w:document>`,i=new class{asBlob(e){const t=n.replace("{{body}}",e);return new Blob([t],{type:"application/msword"})}};var s=(e,t)=>{const r=document.createElement("a");r.href=window.URL.createObjectURL(e),r.download=`${t}.docx`,r.click()};const p=o;return t})()}))
+    </script>
 
     <script>
         // Inicialización de elementos del DOM
@@ -298,10 +329,17 @@ c & d
         
         saveMdBtn.addEventListener('click', () => saveFile('documento.md', markdownInput.value, 'text/markdown;charset=utf-8'));
         saveHtmlBtn.addEventListener('click', () => saveFile('documento.html', `<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"></head><body class="prose">${htmlOutput.innerHTML}</body></html>`, 'text/html;charset=utf-8'));
+        
+        // CORREGIDO: Ahora usa la librería incrustada 'htmlToDocx'
         saveDocxBtn.addEventListener('click', async () => {
-            const content = `<div class="prose">${htmlOutput.innerHTML}</div>`;
-            const fileBuffer = await htmlToDocx.asBlob(content, { css: `@import url('https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css');` });
-            saveFile('documento.docx', fileBuffer, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+            try {
+                // La librería ahora está disponible globalmente como 'htmlToDocx'
+                const fileBuffer = await htmlToDocx.asBlob(htmlOutput.innerHTML);
+                saveFile('documento.docx', fileBuffer, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+            } catch(e) {
+                console.error("Error al exportar a DOCX:", e);
+                alert("No se pudo exportar el archivo .docx. Revisa la consola para más detalles.");
+            }
         });
         
         function copyToClipboard(text, btn) {
