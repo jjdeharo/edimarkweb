@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor Markdown &harr; HTML con LaTeX</title>
+
+    <!-- Tailwind CSS para el diseño -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Marked.js para convertir Markdown a HTML -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- Turndown para convertir HTML a Markdown -->
+    <script src="https://unpkg.com/turndown/dist/turndown.js"></script>
+
+    <!-- KaTeX para renderizar fórmulas LaTeX -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0KOVEMVIhbGKLCePo231CVQSHcLesaPSub69DVZXucRepAS5rPjer" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" xintegrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+    
+    <!-- Lucide Icons para los iconos de la barra de herramientas -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* Estilos personalizados */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+        }
+        .editor-pane {
+            height: calc(100vh - 12rem);
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            overflow-y: auto;
+            background-color: #ffffff;
+            transition: box-shadow 0.2s;
+        }
+        .editor-pane:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
+        }
+        #html-output {
+            font-family: 'Inter', sans-serif;
+        }
+        .toolbar-btn {
+            @apply p-2 rounded-md text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors;
+        }
+        .file-btn {
+            @apply px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2;
+        }
+        
+        /* Estilos para la impresión */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #print-area, #print-area * {
+                visibility: visible;
+            }
+            #print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            .katex {
+                font-size: 1em !important;
+            }
+        }
+        /* Estilos para el output HTML */
+        #html-output h1, #html-output h2, #html-output h3 { @apply border-b pb-2 mb-4 mt-6 font-bold; }
+        #html-output h1 { @apply text-3xl; }
+        #html-output h2 { @apply text-2xl; }
+        #html-output h3 { @apply text-xl; }
+        #html-output p { @apply mb-4; }
+        #html-output ul { @apply list-disc list-inside mb-4 pl-4; }
+        #html-output ol { @apply list-decimal list-inside mb-4 pl-4; }
+        #html-output blockquote { @apply border-l-4 border-gray-300 pl-4 italic text-gray-600 my-4; }
+        #html-output code { @apply bg-gray-100 text-red-500 rounded px-1 py-0.5 font-mono text-sm; }
+        #html-output pre > code { @apply block whitespace-pre-wrap p-4 bg-gray-800 text-white rounded-md; }
+        #html-output table { @apply w-full border-collapse mb-4; }
+        #html-output th, #html-output td { @apply border border-gray-300 px-4 py-2; }
+        #html-output th { @apply bg-gray-100 font-bold; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <header class="flex flex-wrap justify-between items-center mb-4">
+        <h1 class="text-2xl font-bold text-gray-800">Editor Markdown &harr; HTML</h1>
+        <div class="flex items-center gap-2 mt-2 sm:mt-0">
+            <button id="open-file-btn" class="file-btn bg-blue-500 text-white hover:bg-blue-600">
+                <i data-lucide="folder-open"></i> Abrir
+            </button>
+            <input type="file" id="file-input" class="hidden" accept=".md,.txt,.html">
+
+            <button id="save-md-btn" class="file-btn bg-green-500 text-white hover:bg-green-600">
+                <i data-lucide="save"></i> Guardar .md
+            </button>
+            <button id="save-html-btn" class="file-btn bg-green-500 text-white hover:bg-green-600">
+                <i data-lucide="save"></i> Guardar .html
+            </button>
+            <button id="print-btn" class="file-btn bg-gray-600 text-white hover:bg-gray-700">
+                <i data-lucide="printer"></i> Imprimir
+            </button>
+        </div>
+    </header>
+
+    <!-- Barra de herramientas de formato -->
+    <div id="toolbar" class="bg-white p-2 rounded-lg shadow-md mb-4 flex flex-wrap items-center gap-1 border">
+        <button class="toolbar-btn" data-format="bold" title="Negrita"><i data-lucide="bold"></i></button>
+        <button class="toolbar-btn" data-format="italic" title="Cursiva"><i data-lucide="italic"></i></button>
+        <button class="toolbar-btn" data-format="heading" title="Encabezado"><i data-lucide="heading-1"></i></button>
+        <button class="toolbar-btn" data-format="quote" title="Cita"><i data-lucide="quote"></i></button>
+        <button class="toolbar-btn" data-format="list-ul" title="Lista"><i data-lucide="list"></i></button>
+        <button class="toolbar-btn" data-format="list-ol" title="Lista numerada"><i data-lucide="list-ordered"></i></button>
+        <button class="toolbar-btn" data-format="code" title="Código"><i data-lucide="code-2"></i></button>
+        <button class="toolbar-btn" data-format="link" title="Enlace"><i data-lucide="link"></i></button>
+        <button class="toolbar-btn" data-format="image" title="Imagen"><i data-lucide="image"></i></button>
+        <button class="toolbar-btn" data-format="table" title="Tabla"><i data-lucide="table"></i></button>
+        <button class="toolbar-btn" data-format="latex-inline" title="Fórmula LaTeX (en línea)"><i data-lucide="sigma"></i></button>
+        <button class="toolbar-btn" data-format="latex-block" title="Fórmula LaTeX (bloque)"><i data-lucide="function-square"></i></button>
+    </div>
+
+    <!-- Paneles del editor -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+            <h2 class="text-lg font-semibold mb-2 text-gray-700">Markdown</h2>
+            <textarea id="markdown-input" class="editor-pane w-full" spellcheck="false"></textarea>
+        </div>
+        <div>
+            <h2 class="text-lg font-semibold mb-2 text-gray-700">HTML (Previsualización)</h2>
+            <div id="html-output" contenteditable="true" class="editor-pane w-full"></div>
+        </div>
+    </div>
+
+    <!-- Contenedor para impresión -->
+    <div id="print-area" class="hidden"></div>
+
+
+    <script>
+        // Inicialización de elementos del DOM
+        const markdownInput = document.getElementById('markdown-input');
+        const htmlOutput = document.getElementById('html-output');
+        const printArea = document.getElementById('print-area');
+        const toolbar = document.getElementById('toolbar');
+        const openFileBtn = document.getElementById('open-file-btn');
+        const fileInput = document.getElementById('file-input');
+        const saveMdBtn = document.getElementById('save-md-btn');
+        const saveHtmlBtn = document.getElementById('save-html-btn');
+        const printBtn = document.getElementById('print-btn');
+
+        // Inicialización de librerías
+        const turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
+        
+        // Variable para evitar bucles de actualización infinitos
+        let isUpdating = false;
+
+        // Texto de ejemplo inicial
+        const initialContent = `# ¡Bienvenido al editor Markdown!
+
+Este es un editor interactivo. Escribe **Markdown** a la izquierda y verás el resultado en **HTML** a la derecha.
+
+## Funcionalidades
+
+- **Sincronización en tiempo real**: Los cambios se reflejan al instante.
+- **Edición bidireccional**: Edita en Markdown o directamente en el HTML renderizado.
+- **Soporte para LaTeX**: Inserta fórmulas matemáticas fácilmente.
+
+### Ejemplo de LaTeX
+
+Una fórmula en línea como $E=mc^2$ se integra en el texto.
+
+Para fórmulas en bloque, usa doble signo de dólar:
+
+$$
+\\frac{1}{\\pi} = \\frac{2\\sqrt{2}}{9801} \\sum_{k=0}^{\\infty} \\frac{(4k)!(1103+26390k)}{(k!)^4 396^{4k}}
+$$
+
+### Otras características
+
+1.  **Listas ordenadas** y no ordenadas.
+2.  > Citas en bloque para destacar texto.
+3.  Tablas, enlaces, imágenes y bloques de código.
+
+| Cabecera 1 | Cabecera 2 |
+|------------|------------|
+| Celda 1    | Celda 2    |
+| Celda 3    | Celda 4    |
+
+\`\`\`javascript
+// Bloque de código con resaltado
+function helloWorld() {
+  console.log("Hola, mundo!");
+}
+\`\`\`
+`;
+
+        // Función para actualizar la vista HTML desde Markdown
+        function updateHtml() {
+            if (isUpdating) return;
+            isUpdating = true;
+            const markdownText = markdownInput.value;
+            // Usamos marked para convertir Markdown a HTML
+            htmlOutput.innerHTML = marked.parse(markdownText);
+            // Usamos KaTeX para renderizar las matemáticas
+            renderMathInElement(htmlOutput, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false},
+                    {left: '\\[', right: '\\]', display: true}
+                ],
+                throwOnError: false
+            });
+            isUpdating = false;
+        }
+
+        // Función para actualizar la vista Markdown desde HTML
+        function updateMarkdown() {
+            if (isUpdating) return;
+            isUpdating = true;
+            // Usamos turndown para convertir HTML a Markdown
+            const htmlContent = htmlOutput.innerHTML;
+            markdownInput.value = turndownService.turndown(htmlContent);
+            isUpdating = false;
+        }
+
+        // Event Listeners para la sincronización
+        markdownInput.addEventListener('input', updateHtml);
+        htmlOutput.addEventListener('input', updateMarkdown);
+
+        // --- Funcionalidad de la barra de herramientas ---
+        toolbar.addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            if (!button) return;
+
+            const format = button.dataset.format;
+            if (format) {
+                applyFormat(format);
+            }
+        });
+
+        function applyFormat(format) {
+            const start = markdownInput.selectionStart;
+            const end = markdownInput.selectionEnd;
+            const selectedText = markdownInput.value.substring(start, end);
+            let newText = '';
+
+            switch (format) {
+                case 'bold':
+                    newText = `**${selectedText || 'texto en negrita'}**`;
+                    break;
+                case 'italic':
+                    newText = `*${selectedText || 'texto en cursiva'}*`;
+                    break;
+                case 'heading':
+                    newText = `\n## ${selectedText || 'Encabezado'}\n`;
+                    break;
+                case 'quote':
+                    newText = `\n> ${selectedText || 'Cita'}\n`;
+                    break;
+                case 'list-ul':
+                    newText = `\n- ${selectedText || 'Elemento 1'}\n- Elemento 2`;
+                    break;
+                case 'list-ol':
+                    newText = `\n1. ${selectedText || 'Elemento 1'}\n2. Elemento 2`;
+                    break;
+                case 'code':
+                    newText = `\`${selectedText || 'código'}\``;
+                    break;
+                case 'link':
+                    newText = `[${selectedText || 'texto del enlace'}](https://www.ejemplo.com)`;
+                    break;
+                case 'image':
+                    newText = `![${selectedText || 'texto alternativo'}](https://via.placeholder.com/150)`;
+                    break;
+                case 'table':
+                    newText = `\n| Cabecera 1 | Cabecera 2 |\n|------------|------------|\n| Celda 1    | Celda 2    |\n`;
+                    break;
+                case 'latex-inline':
+                    newText = `$${selectedText || 'E=mc^2'}$`;
+                    break;
+                case 'latex-block':
+                    newText = `\n$$\n${selectedText || 'f(x) = x^2'}\n$$\n`;
+                    break;
+            }
+            
+            // Insertar el texto formateado
+            markdownInput.setRangeText(newText, start, end, 'select');
+            markdownInput.focus();
+            updateHtml();
+        }
+
+        // --- Funcionalidad de Archivos ---
+
+        // Abrir archivo
+        openFileBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const content = e.target.result;
+                if (file.type === "text/html") {
+                    htmlOutput.innerHTML = content;
+                    updateMarkdown();
+                } else {
+                    markdownInput.value = content;
+                    updateHtml();
+                }
+            };
+            reader.readAsText(file);
+            // Limpiar el input para poder abrir el mismo archivo de nuevo
+            fileInput.value = '';
+        });
+
+        // Función genérica para guardar
+        function saveFile(filename, content, type) {
+            const blob = new Blob([content], { type });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Guardar como Markdown
+        saveMdBtn.addEventListener('click', () => {
+            saveFile('documento.md', markdownInput.value, 'text/markdown;charset=utf-8');
+        });
+
+        // Guardar como HTML
+        saveHtmlBtn.addEventListener('click', () => {
+            const htmlContent = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Documento</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <style>
+    body { font-family: sans-serif; line-height: 1.6; padding: 2em; }
+    /* Añade aquí más estilos si lo deseas */
+  </style>
+</head>
+<body>
+  ${htmlOutput.innerHTML}
+</body>
+</html>`;
+            saveFile('documento.html', htmlContent, 'text/html;charset=utf-8');
+        });
+
+        // Imprimir
+        printBtn.addEventListener('click', () => {
+            printArea.innerHTML = htmlOutput.innerHTML;
+            window.print();
+            printArea.innerHTML = ''; // Limpiar después de imprimir
+        });
+
+
+        // Carga inicial
+        window.onload = () => {
+            lucide.createIcons();
+            markdownInput.value = initialContent;
+            updateHtml();
+            markdownInput.focus();
+        };
+
+    </script>
+</body>
+</html>
