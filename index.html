@@ -14,7 +14,7 @@
     <!-- Turndown para convertir HTML a Markdown -->
     <script src="https://unpkg.com/turndown/dist/turndown.js"></script>
 
-    <!-- KaTeX para renderizar fórmulas LaTeX -->
+    <!-- KaTeX para renderizar fórmulas LaTeX (CORREGIDO) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0KOVEMVIhbGKLCePo231CVQSHcLesaPSub69DVZXucRepAS5rPjer" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" xintegrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
@@ -61,7 +61,7 @@
         </div>
     </header>
 
-    <!-- Barra de herramientas de formato (NUEVA ESTRUCTURA) -->
+    <!-- Barra de herramientas de formato -->
     <div id="toolbar" class="bg-white p-2 rounded-lg shadow-md mb-4 flex flex-wrap items-center gap-2 border">
         <!-- Grupo 1: Formato básico -->
         <div class="flex items-center gap-1">
@@ -69,18 +69,14 @@
             <button class="toolbar-btn" data-format="italic" title="Cursiva"><i data-lucide="italic"></i></button>
             <button class="toolbar-btn" data-format="heading" title="Encabezado"><i data-lucide="heading-1"></i></button>
         </div>
-
         <div class="border-l h-6 border-gray-300"></div>
-
         <!-- Grupo 2: Bloques -->
         <div class="flex items-center gap-1">
             <button class="toolbar-btn" data-format="quote" title="Cita"><i data-lucide="quote"></i></button>
             <button class="toolbar-btn" data-format="list-ul" title="Lista"><i data-lucide="list"></i></button>
             <button class="toolbar-btn" data-format="list-ol" title="Lista numerada"><i data-lucide="list-ordered"></i></button>
         </div>
-
         <div class="border-l h-6 border-gray-300"></div>
-
         <!-- Grupo 3: Inserciones -->
         <div class="flex items-center gap-1">
             <button class="toolbar-btn" data-format="code" title="Código"><i data-lucide="code-2"></i></button>
@@ -88,9 +84,7 @@
             <button class="toolbar-btn" data-format="image" title="Imagen"><i data-lucide="image"></i></button>
             <button class="toolbar-btn" data-format="table" title="Tabla"><i data-lucide="table"></i></button>
         </div>
-
         <div class="border-l h-6 border-gray-300"></div>
-
         <!-- Grupo 4: LaTeX -->
         <div class="flex items-center gap-1">
             <button class="toolbar-btn" data-format="latex-inline" title="Fórmula LaTeX (en línea)"><i data-lucide="sigma"></i></button>
@@ -294,7 +288,7 @@ c & d
             const blob = new Blob([content], { type });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-a.download = filename;
+            a.download = filename;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -309,17 +303,33 @@ a.download = filename;
             saveFile('documento.docx', fileBuffer, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
         });
         
+        // --- Función de Copiar (CORREGIDA) ---
         function copyToClipboard(text, btn) {
             const originalIcon = btn.innerHTML;
             const tempTextArea = document.createElement('textarea');
+            tempTextArea.style.position = 'fixed';
+            tempTextArea.style.top = '-9999px';
+            tempTextArea.style.left = '-9999px';
             tempTextArea.value = text;
             document.body.appendChild(tempTextArea);
+            tempTextArea.focus();
             tempTextArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(tempTextArea);
 
-            btn.innerHTML = '<i data-lucide="check" class="text-green-500"></i>';
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    btn.innerHTML = '<i data-lucide="check" class="text-green-500"></i>';
+                } else {
+                    btn.innerHTML = '<i data-lucide="x" class="text-red-500"></i>';
+                }
+            } catch (err) {
+                console.error('Error al intentar copiar:', err);
+                btn.innerHTML = '<i data-lucide="x" class="text-red-500"></i>';
+            }
+
+            document.body.removeChild(tempTextArea);
             lucide.createIcons();
+            
             setTimeout(() => {
                 btn.innerHTML = originalIcon;
                 lucide.createIcons();
