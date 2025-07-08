@@ -3,27 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editor Markdown &harr; HTML con DOCX y LaTeX</title>
+    <title>Editor Markdown &harr; HTML con LaTeX</title>
 
     <!-- Tailwind CSS con el plugin de Tipografía -->
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
 
     <!-- Librerías de Markdown y HTML -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
-    <script src="https://unpkg.com/turndown/dist/turndown.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@10/dist/marked.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/turndown/7.1.1/turndown.min.js" defer></script>
 
-    <!-- KaTeX para renderizar fórmulas LaTeX (CORREGIDO) -->
+    <!-- KaTeX para renderizar fórmulas LaTeX -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0KOVEMVIhbGKLCePo231CVQSHcLesaPSub69DVZXucRepAS5rPjer" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" xintegrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" defer></script>
     
-    <!-- Librerías para DOCX (CORREGIDO) -->
-    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.7.0/mammoth.browser.min.js" defer></script>
-    <!-- 1. Se cambia a una librería compatible con el navegador -->
-    <script src="https://cdn.jsdelivr.net/npm/html-to-docx@1.8.0/dist/html-to-docx.umd.js" defer></script>
-
-    <!-- Lucide Icons (CORREGIDO) -->
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
+    <!-- Lucide Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.523.0/dist/umd/lucide.min.js" defer></script>
 
     <style>
         /* Estilos personalizados sin @apply */
@@ -60,10 +55,8 @@
         <h1 class="text-2xl font-bold text-gray-800">Editor Markdown &harr; HTML</h1>
         <div class="flex items-center gap-2 mt-2 sm:mt-0 flex-wrap">
             <button id="open-file-btn" class="file-btn bg-blue-500 text-white hover:bg-blue-600"><i data-lucide="folder-open"></i> Abrir</button>
-            <input type="file" id="file-input" class="hidden" accept=".md,.txt,.html,.docx">
-            <button id="save-md-btn" class="file-btn bg-green-500 text-white hover:bg-green-600"><i data-lucide="save"></i> Guardar .md</button>
-            <button id="save-html-btn" class="file-btn bg-green-500 text-white hover:bg-green-600"><i data-lucide="save"></i> Guardar .html</button>
-            <button id="save-docx-btn" class="file-btn bg-indigo-500 text-white hover:bg-indigo-600"><i data-lucide="file-text"></i> Guardar .docx</button>
+            <input type="file" id="file-input" class="hidden" accept=".md,.txt,.html">
+            <button id="save-btn" class="file-btn bg-green-500 text-white hover:bg-green-600"><i data-lucide="save"></i> Guardar</button>
             <button id="print-btn" class="file-btn bg-gray-600 text-white hover:bg-gray-700"><i data-lucide="printer"></i> Imprimir</button>
         </div>
     </header>
@@ -137,6 +130,36 @@
             <div class="mt-6 flex justify-end gap-3">
                 <button id="cancel-table-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
                 <button id="create-table-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Crear</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para guardar archivo (NUEVO) -->
+    <div id="save-modal-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
+        <div id="save-modal" class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
+            <h3 class="text-lg font-bold mb-4">Guardar como...</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="filename" class="block text-sm font-medium text-gray-700">Nombre del archivo</label>
+                    <input type="text" id="filename" value="documento" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Formato</label>
+                    <div class="mt-2 space-y-2">
+                        <div class="flex items-center">
+                            <input id="format-md" name="save-format" type="radio" checked class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300">
+                            <label for="format-md" class="ml-3 block text-sm font-medium text-gray-700">Markdown (.md)</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input id="format-html" name="save-format" type="radio" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300">
+                            <label for="format-html" class="ml-3 block text-sm font-medium text-gray-700">HTML (.html)</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button id="cancel-save-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
+                <button id="confirm-save-btn" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">Guardar</button>
             </div>
         </div>
     </div>
@@ -232,6 +255,11 @@ c & d
             const tableModalOverlay = document.getElementById('table-modal-overlay');
             tableModalOverlay.style.display = show ? 'flex' : 'none';
         }
+
+        function toggleSaveModal(show) {
+            const saveModalOverlay = document.getElementById('save-modal-overlay');
+            saveModalOverlay.style.display = show ? 'flex' : 'none';
+        }
         
         function saveFile(filename, content, type) {
             const blob = new Blob([content], { type });
@@ -288,15 +316,16 @@ c & d
             const toolbar = document.getElementById('toolbar');
             const openFileBtn = document.getElementById('open-file-btn');
             const fileInput = document.getElementById('file-input');
-            const saveMdBtn = document.getElementById('save-md-btn');
-            const saveHtmlBtn = document.getElementById('save-html-btn');
-            const saveDocxBtn = document.getElementById('save-docx-btn');
+            const saveBtn = document.getElementById('save-btn');
             const printBtn = document.getElementById('print-btn');
             const copyMdBtn = document.getElementById('copy-md-btn');
             const copyHtmlBtn = document.getElementById('copy-html-btn');
             const tableModalOverlay = document.getElementById('table-modal-overlay');
             const createTableBtn = document.getElementById('create-table-btn');
             const cancelTableBtn = document.getElementById('cancel-table-btn');
+            const saveModalOverlay = document.getElementById('save-modal-overlay');
+            const confirmSaveBtn = document.getElementById('confirm-save-btn');
+            const cancelSaveBtn = document.getElementById('cancel-save-btn');
 
             // Inicialización de librerías
             if (window.TurndownService) {
@@ -333,48 +362,42 @@ c & d
             });
             cancelTableBtn.addEventListener('click', () => toggleTableModal(false));
             tableModalOverlay.addEventListener('click', (e) => { if (e.target === tableModalOverlay) { toggleTableModal(false); } });
+            
+            saveBtn.addEventListener('click', () => toggleSaveModal(true));
+            confirmSaveBtn.addEventListener('click', () => {
+                const filenameInput = document.getElementById('filename');
+                const filename = filenameInput.value || 'documento';
+                const isMd = document.getElementById('format-md').checked;
+
+                if (isMd) {
+                    saveFile(`${filename}.md`, markdownInput.value, 'text/markdown;charset=utf-8');
+                } else {
+                    const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"></head><body class="prose">${htmlOutput.innerHTML}</body></html>`;
+                    saveFile(`${filename}.html`, htmlContent, 'text/html;charset=utf-8');
+                }
+                toggleSaveModal(false);
+            });
+            cancelSaveBtn.addEventListener('click', () => toggleSaveModal(false));
+            saveModalOverlay.addEventListener('click', (e) => { if (e.target === saveModalOverlay) { toggleSaveModal(false); } });
+
             openFileBtn.addEventListener('click', () => fileInput.click());
             fileInput.addEventListener('change', (event) => {
                 const file = event.target.files[0];
                 if (!file) return;
                 const reader = new FileReader();
-                if (file.name.endsWith('.docx')) {
-                    if (window.mammoth) {
-                        reader.onload = (e) => mammoth.convertToHtml({ arrayBuffer: e.target.result }).then(r => { htmlOutput.innerHTML = r.value; updateMarkdown(); }).catch(e => console.error(e));
-                        reader.readAsArrayBuffer(file);
+                reader.onload = (e) => {
+                    if (file.name.endsWith(".html")) { 
+                        htmlOutput.innerHTML = e.target.result; 
+                        updateMarkdown(); 
+                    } else { 
+                        markdownInput.value = e.target.result; 
+                        updateHtml(); 
                     }
-                } else {
-                    reader.onload = (e) => {
-                        if (file.name.endsWith(".html")) { htmlOutput.innerHTML = e.target.result; updateMarkdown(); } 
-                        else { markdownInput.value = e.target.result; updateHtml(); }
-                    };
-                    reader.readAsText(file);
-                }
+                };
+                reader.readAsText(file);
                 fileInput.value = '';
             });
-            saveMdBtn.addEventListener('click', () => saveFile('documento.md', markdownInput.value, 'text/markdown;charset=utf-8'));
-            saveHtmlBtn.addEventListener('click', () => saveFile('documento.html', `<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"></head><body class="prose">${htmlOutput.innerHTML}</body></html>`, 'text/html;charset=utf-8'));
             
-            // 2. Nuevo manejador del botón (CORREGIDO)
-            saveDocxBtn.addEventListener('click', async () => {
-                if (typeof window.htmlToDocx === 'undefined') {
-                    alert('La función para exportar a DOCX no se ha podido cargar. Revisa tu conexión a internet o inténtalo de nuevo.');
-                    return;
-                }
-                try {
-                    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${htmlOutput.innerHTML}</body></html>`;
-                    const blob = await window.htmlToDocx(html);
-                    saveFile(
-                        'documento.docx',
-                        blob,
-                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                    );
-                } catch(e) {
-                    console.error("Error al exportar a DOCX:", e);
-                    alert("No se pudo exportar el archivo .docx. Revisa la consola para más detalles.");
-                }
-            });
-
             copyMdBtn.addEventListener('click', () => copyToClipboard(markdownInput.value, copyMdBtn));
             copyHtmlBtn.addEventListener('click', () => copyToClipboard(htmlOutput.innerHTML, copyHtmlBtn));
             printBtn.addEventListener('click', () => {
