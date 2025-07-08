@@ -19,9 +19,10 @@
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" xintegrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
     
-    <!-- Librerías para DOCX -->
+    <!-- Librerías para DOCX (CORREGIDO) -->
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.7.0/mammoth.browser.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html-to-docx@1.8.0/dist/html-to-docx.js"></script>
+    <!-- Se cambia el CDN de html-to-docx para evitar el error de tipo MIME -->
+    <script src="https://unpkg.com/html-to-docx@1.8.0/dist/html-to-docx.js"></script>
 
     <!-- Lucide Icons para los iconos de la barra de herramientas -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -303,7 +304,6 @@ c & d
             saveFile('documento.docx', fileBuffer, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
         });
         
-        // --- Función de Copiar (CORREGIDA) ---
         function copyToClipboard(text, btn) {
             const originalIcon = btn.innerHTML;
             const tempTextArea = document.createElement('textarea');
