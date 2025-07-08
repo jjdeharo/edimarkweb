@@ -29,7 +29,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        /* Estilos personalizados (sin cambios) */
+        /* Estilos personalizados */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5;
@@ -60,21 +60,33 @@
             @apply px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2;
         }
         
-        /* Estilos para la impresión */
+        /* Estilos para la impresión (CORREGIDOS) */
         @media print {
-            body * { visibility: hidden; }
-            #print-area, #print-area * { visibility: visible; }
-            #print-area { position: absolute; left: 0; top: 0; width: 100%; }
-            .katex { font-size: 1em !important; }
+            body * {
+                visibility: hidden;
+            }
+            #print-area, #print-area * {
+                visibility: visible;
+            }
+            #print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            .katex {
+                font-size: 1em !important;
+            }
         }
-        /* Estilos para el output HTML */
+        /* Estilos para el output HTML (CORREGIDOS) */
         #html-output h1, #html-output h2, #html-output h3 { @apply border-b pb-2 mb-4 mt-6 font-bold; }
         #html-output h1 { @apply text-3xl; }
         #html-output h2 { @apply text-2xl; }
         #html-output h3 { @apply text-xl; }
         #html-output p { @apply mb-4; }
-        #html-output ul { @apply list-disc list-inside mb-4 pl-4; }
-        #html-output ol { @apply list-decimal list-inside mb-4 pl-4; }
+        /* Estilos de lista mejorados */
+        #html-output ul { @apply list-disc list-outside mb-4 pl-6; }
+        #html-output ol { @apply list-decimal list-outside mb-4 pl-6; }
         #html-output blockquote { @apply border-l-4 border-gray-300 pl-4 italic text-gray-600 my-4; }
         #html-output code { @apply bg-gray-100 text-red-500 rounded px-1 py-0.5 font-mono text-sm; }
         #html-output pre > code { @apply block whitespace-pre-wrap p-4 bg-gray-800 text-white rounded-md; }
@@ -91,7 +103,6 @@
             <button id="open-file-btn" class="file-btn bg-blue-500 text-white hover:bg-blue-600">
                 <i data-lucide="folder-open"></i> Abrir
             </button>
-            <!-- El input ahora acepta .docx -->
             <input type="file" id="file-input" class="hidden" accept=".md,.txt,.html,.docx">
 
             <button id="save-md-btn" class="file-btn bg-green-500 text-white hover:bg-green-600">
@@ -100,7 +111,6 @@
             <button id="save-html-btn" class="file-btn bg-green-500 text-white hover:bg-green-600">
                 <i data-lucide="save"></i> Guardar .html
             </button>
-            <!-- Nuevo botón para guardar como .docx -->
             <button id="save-docx-btn" class="file-btn bg-indigo-500 text-white hover:bg-indigo-600">
                 <i data-lucide="file-text"></i> Guardar .docx
             </button>
@@ -110,7 +120,7 @@
         </div>
     </header>
 
-    <!-- Barra de herramientas de formato (sin cambios) -->
+    <!-- Barra de herramientas de formato -->
     <div id="toolbar" class="bg-white p-2 rounded-lg shadow-md mb-4 flex flex-wrap items-center gap-1 border">
         <button class="toolbar-btn" data-format="bold" title="Negrita"><i data-lucide="bold"></i></button>
         <button class="toolbar-btn" data-format="italic" title="Cursiva"><i data-lucide="italic"></i></button>
@@ -126,7 +136,7 @@
         <button class="toolbar-btn" data-format="latex-block" title="Fórmula LaTeX (bloque)"><i data-lucide="function-square"></i></button>
     </div>
 
-    <!-- Paneles del editor (sin cambios) -->
+    <!-- Paneles del editor -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
             <h2 class="text-lg font-semibold mb-2 text-gray-700">Markdown</h2>
@@ -138,7 +148,7 @@
         </div>
     </div>
 
-    <!-- Contenedor para impresión (sin cambios) -->
+    <!-- Contenedor para impresión -->
     <div id="print-area" class="hidden"></div>
 
 
@@ -152,42 +162,63 @@
         const fileInput = document.getElementById('file-input');
         const saveMdBtn = document.getElementById('save-md-btn');
         const saveHtmlBtn = document.getElementById('save-html-btn');
-        const saveDocxBtn = document.getElementById('save-docx-btn'); // Nuevo botón
+        const saveDocxBtn = document.getElementById('save-docx-btn');
         const printBtn = document.getElementById('print-btn');
 
         // Inicialización de librerías
         const turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
         let isUpdating = false;
-        const initialContent = `# ¡Bienvenido al editor Markdown!
 
-Este es un editor interactivo. Escribe **Markdown** a la izquierda y verás el resultado en **HTML** a la derecha.
+        // Contenido inicial mejorado para demostrar las correcciones
+        const initialContent = `# Editor Markdown mejorado
 
-## Funcionalidades mejoradas
+¡Hola! He corregido los problemas que mencionaste.
 
-- **Importación/Exportación de DOCX**: Ahora puedes abrir y guardar archivos \`.docx\`.
-- **Soporte para LaTeX**: Las fórmulas se conservan al exportar a DOCX.
+## Listas
+Ahora las listas se deberían ver perfectamente.
+- Este es un elemento de una lista no ordenada.
+- Y este es otro.
 
-### Ejemplo de LaTeX
+1. Esta es una lista ordenada.
+2. Con su segundo elemento.
 
-Una fórmula en línea como $E=mc^2$ se integra en el texto.
+## Fórmulas LaTeX complejas
+Para **matrices, sistemas de ecuaciones** y otras fórmulas de varias líneas, te recomiendo usar los delimitadores \`\\[ ... \\]\` en lugar de \`$$ ... $$\`. Es más robusto.
 
-Para fórmulas en bloque, usa doble signo de dólar:
+### Ejemplo de Matriz
+Observa cómo se usa la doble barra invertida \`\\\\\` para las nuevas líneas.
+\\[
+A = \\begin{pmatrix}
+a & b \\\\
+c & d
+\\end{pmatrix}
+\\]
 
-$$
-\\frac{1}{\\pi} = \\frac{2\\sqrt{2}}{9801} \\sum_{k=0}^{\\infty} \\frac{(4k)!(1103+26390k)}{(k!)^4 396^{4k}}
-$$
+### Ejemplo de Sistema de Ecuaciones
+\\[
+\\begin{cases}
+3x + 5y = 2 \\\\
+5x + 8y = 3
+\\end{cases}
+\\]
+
+### Fórmula en línea
+Por supuesto, las fórmulas en línea como $E=mc^2$ siguen funcionando igual.
 `;
 
-        // --- Funciones principales (sin cambios) ---
+        // --- Funciones principales ---
         function updateHtml() {
             if (isUpdating) return;
             isUpdating = true;
             const markdownText = markdownInput.value;
             htmlOutput.innerHTML = marked.parse(markdownText);
+            // Configuración de KaTeX CORREGIDA
             renderMathInElement(htmlOutput, {
                 delimiters: [
                     {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
                     {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false}
                 ],
                 throwOnError: false
             });
@@ -204,6 +235,8 @@ $$
 
         markdownInput.addEventListener('input', updateHtml);
         htmlOutput.addEventListener('input', updateMarkdown);
+
+        // --- Barra de herramientas ---
         toolbar.addEventListener('click', (e) => {
             const button = e.target.closest('button');
             if (button && button.dataset.format) {
@@ -228,43 +261,35 @@ $$
                 case 'image': newText = `![${selectedText || 'texto alternativo'}](https://via.placeholder.com/150)`; break;
                 case 'table': newText = `\n| Cabecera 1 | Cabecera 2 |\n|------------|------------|\n| Celda 1    | Celda 2    |\n`; break;
                 case 'latex-inline': newText = `$${selectedText || 'E=mc^2'}$`; break;
-                case 'latex-block': newText = `\n$$\n${selectedText || 'f(x) = x^2'}\n$$\n`; break;
+                case 'latex-block': newText = `\n\\[\n${selectedText || 'f(x) = x^2'}\n\\]\n`; break; // Cambiado a \\[ \\]
             }
             markdownInput.setRangeText(newText, start, end, 'select');
             markdownInput.focus();
             updateHtml();
         }
 
-        // --- Funcionalidad de Archivos (ACTUALIZADA) ---
-
+        // --- Funcionalidad de Archivos ---
         openFileBtn.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             
-            // Lógica para diferenciar tipos de archivo
             if (file.name.endsWith('.docx')) {
-                // Importar DOCX
                 reader.onload = function(e) {
                     mammoth.convertToHtml({ arrayBuffer: e.target.result })
                         .then(result => {
-                            htmlOutput.innerHTML = result.value; // El HTML convertido
-                            // Los mensajes y notas se pueden mostrar si es necesario
-                            if(result.messages.length > 0) {
-                                console.warn("Mensajes de importación de DOCX:", result.messages);
-                            }
-                            updateMarkdown(); // Sincronizar de vuelta a Markdown
+                            htmlOutput.innerHTML = result.value;
+                            if(result.messages.length > 0) console.warn("Mensajes de importación:", result.messages);
+                            updateMarkdown();
                         })
                         .catch(err => {
-                            console.error("Error al importar el DOCX:", err);
+                            console.error("Error al importar DOCX:", err);
                             alert("No se pudo importar el archivo .docx.");
                         });
                 };
                 reader.readAsArrayBuffer(file);
             } else {
-                // Lógica existente para .md, .html, .txt
                 reader.onload = (e) => {
                     const content = e.target.result;
                     if (file.type === "text/html") {
@@ -292,34 +317,27 @@ $$
             URL.revokeObjectURL(url);
         }
 
-        saveMdBtn.addEventListener('click', () => {
-            saveFile('documento.md', markdownInput.value, 'text/markdown;charset=utf-8');
-        });
-
-
+        saveMdBtn.addEventListener('click', () => saveFile('documento.md', markdownInput.value, 'text/markdown;charset=utf-8'));
         saveHtmlBtn.addEventListener('click', () => {
             const htmlContent = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Documento</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"><style>body{font-family:sans-serif;line-height:1.6;padding:2em;}</style></head><body>${htmlOutput.innerHTML}</body></html>`;
             saveFile('documento.html', htmlContent, 'text/html;charset=utf-8');
         });
-
-        // --- NUEVA Funcionalidad: Guardar como DOCX ---
         saveDocxBtn.addEventListener('click', async () => {
-            // Se usa innerHTML del panel de previsualización
             const content = htmlOutput.innerHTML;
-
-            // Incluimos la hoja de estilos de KaTeX para que las fórmulas se vean bien en Word
             const fileBuffer = await htmlToDocx.asBlob(content, {
                 header: true,
                 footer: true,
                 css: `@import url('https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css');`,
             });
-
             saveFile('documento.docx', fileBuffer, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
         });
 
+        // --- Funcionalidad de impresión CORREGIDA ---
         printBtn.addEventListener('click', () => {
             printArea.innerHTML = htmlOutput.innerHTML;
+            printArea.classList.remove('hidden'); // Hacer visible para la impresión
             window.print();
+            printArea.classList.add('hidden'); // Ocultar de nuevo
             printArea.innerHTML = '';
         });
 
