@@ -184,9 +184,56 @@
         let turndownService;
         let isUpdating = false;
 
-        const initialContent = `# ¡Bienvenido a EdiMarkWeb!
-        
-Usa la barra de herramientas para dar formato a tu texto, insertar elementos y mucho más.`;
+        const initialContent = `# Manual rápido de EdiMarkWeb
+
+¡Bienvenido/a a EdiMarkWeb! Esta es una guía rápida para que aproveches al máximo el editor.
+
+## Barra de herramientas
+
+La barra de herramientas superior te permite aplicar formato a tu texto de forma rápida. Simplemente selecciona el texto que quieres formatear (o coloca el cursor donde quieras insertar el elemento) y haz clic en el botón correspondiente.
+
+Puedes añadir:
+- **Negrita** y *cursiva*.
+- Títulos de varios niveles.
+- Citas, listas y código.
+- Enlaces e imágenes.
+- Tablas (se abrirá un diálogo para configurarlas).
+
+## Soporte para LaTeX
+
+Puedes escribir fórmulas matemáticas complejas usando la sintaxis de LaTeX.
+
+### Fórmulas en línea
+Inserta fórmulas dentro de un párrafo, como esta: $\\sin^2(x) + \\cos^2(x) = 1$.
+
+### Fórmulas en bloque
+Para fórmulas más grandes, usa bloques dedicados. Por ejemplo, la fórmula para resolver ecuaciones de segundo grado:
+\\[
+x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}
+\\]
+
+También puedes escribir sistemas de ecuaciones:
+\\[
+\\begin{cases}
+3x + 5y = 2 \\\\
+5x + 8y = 3
+\\end{cases}
+\\]
+
+O matrices complejas:
+\\[
+A = \\begin{pmatrix}
+a_{11} & a_{12} & \\cdots & a_{1n} \\\\
+a_{21} & a_{22} & \\cdots & a_{2n} \\\\
+\\vdots & \\vdots & \\ddots & \\vdots \\\\
+a_{m1} & a_{m2} & \\cdots & a_{mn}
+\\end{pmatrix}
+\\]
+
+## Edición bidireccional
+
+Lo que escribas en el panel de **Markdown** se reflejará instantáneamente en la **Previsualización**. Además, ¡puedes editar directamente en la previsualización y los cambios se convertirán a Markdown!
+`;
 
         // --- Funciones principales ---
         function updateHtml() {
