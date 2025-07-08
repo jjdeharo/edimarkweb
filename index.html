@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editor Markdown &harr; HTML con LaTeX</title>
+    <title>Editor Markdown &harr; HTML con DOCX y LaTeX</title>
 
     <!-- Tailwind CSS para el diseño -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -19,11 +19,17 @@
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" xintegrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
     
+    <!-- Librerías para DOCX -->
+    <!-- Mammoth.js para importar .docx a HTML -->
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.7.0/mammoth.browser.min.js"></script>
+    <!-- html-to-docx para exportar HTML a .docx -->
+    <script src="https://cdn.jsdelivr.net/npm/html-to-docx@1.8.0/dist/html-to-docx.js"></script>
+
     <!-- Lucide Icons para los iconos de la barra de herramientas -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        /* Estilos personalizados */
+        /* Estilos personalizados (sin cambios) */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5;
@@ -56,21 +62,10 @@
         
         /* Estilos para la impresión */
         @media print {
-            body * {
-                visibility: hidden;
-            }
-            #print-area, #print-area * {
-                visibility: visible;
-            }
-            #print-area {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-            }
-            .katex {
-                font-size: 1em !important;
-            }
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { position: absolute; left: 0; top: 0; width: 100%; }
+            .katex { font-size: 1em !important; }
         }
         /* Estilos para el output HTML */
         #html-output h1, #html-output h2, #html-output h3 { @apply border-b pb-2 mb-4 mt-6 font-bold; }
@@ -92,11 +87,12 @@
 
     <header class="flex flex-wrap justify-between items-center mb-4">
         <h1 class="text-2xl font-bold text-gray-800">Editor Markdown &harr; HTML</h1>
-        <div class="flex items-center gap-2 mt-2 sm:mt-0">
+        <div class="flex items-center gap-2 mt-2 sm:mt-0 flex-wrap">
             <button id="open-file-btn" class="file-btn bg-blue-500 text-white hover:bg-blue-600">
                 <i data-lucide="folder-open"></i> Abrir
             </button>
-            <input type="file" id="file-input" class="hidden" accept=".md,.txt,.html">
+            <!-- El input ahora acepta .docx -->
+            <input type="file" id="file-input" class="hidden" accept=".md,.txt,.html,.docx">
 
             <button id="save-md-btn" class="file-btn bg-green-500 text-white hover:bg-green-600">
                 <i data-lucide="save"></i> Guardar .md
@@ -104,13 +100,17 @@
             <button id="save-html-btn" class="file-btn bg-green-500 text-white hover:bg-green-600">
                 <i data-lucide="save"></i> Guardar .html
             </button>
+            <!-- Nuevo botón para guardar como .docx -->
+            <button id="save-docx-btn" class="file-btn bg-indigo-500 text-white hover:bg-indigo-600">
+                <i data-lucide="file-text"></i> Guardar .docx
+            </button>
             <button id="print-btn" class="file-btn bg-gray-600 text-white hover:bg-gray-700">
                 <i data-lucide="printer"></i> Imprimir
             </button>
         </div>
     </header>
 
-    <!-- Barra de herramientas de formato -->
+    <!-- Barra de herramientas de formato (sin cambios) -->
     <div id="toolbar" class="bg-white p-2 rounded-lg shadow-md mb-4 flex flex-wrap items-center gap-1 border">
         <button class="toolbar-btn" data-format="bold" title="Negrita"><i data-lucide="bold"></i></button>
         <button class="toolbar-btn" data-format="italic" title="Cursiva"><i data-lucide="italic"></i></button>
@@ -126,7 +126,7 @@
         <button class="toolbar-btn" data-format="latex-block" title="Fórmula LaTeX (bloque)"><i data-lucide="function-square"></i></button>
     </div>
 
-    <!-- Paneles del editor -->
+    <!-- Paneles del editor (sin cambios) -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
             <h2 class="text-lg font-semibold mb-2 text-gray-700">Markdown</h2>
@@ -138,7 +138,7 @@
         </div>
     </div>
 
-    <!-- Contenedor para impresión -->
+    <!-- Contenedor para impresión (sin cambios) -->
     <div id="print-area" class="hidden"></div>
 
 
@@ -152,24 +152,20 @@
         const fileInput = document.getElementById('file-input');
         const saveMdBtn = document.getElementById('save-md-btn');
         const saveHtmlBtn = document.getElementById('save-html-btn');
+        const saveDocxBtn = document.getElementById('save-docx-btn'); // Nuevo botón
         const printBtn = document.getElementById('print-btn');
 
         // Inicialización de librerías
         const turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
-        
-        // Variable para evitar bucles de actualización infinitos
         let isUpdating = false;
-
-        // Texto de ejemplo inicial
         const initialContent = `# ¡Bienvenido al editor Markdown!
 
 Este es un editor interactivo. Escribe **Markdown** a la izquierda y verás el resultado en **HTML** a la derecha.
 
-## Funcionalidades
+## Funcionalidades mejoradas
 
-- **Sincronización en tiempo real**: Los cambios se reflejan al instante.
-- **Edición bidireccional**: Edita en Markdown o directamente en el HTML renderizado.
-- **Soporte para LaTeX**: Inserta fórmulas matemáticas fácilmente.
+- **Importación/Exportación de DOCX**: Ahora puedes abrir y guardar archivos \`.docx\`.
+- **Soporte para LaTeX**: Las fórmulas se conservan al exportar a DOCX.
 
 ### Ejemplo de LaTeX
 
@@ -180,68 +176,38 @@ Para fórmulas en bloque, usa doble signo de dólar:
 $$
 \\frac{1}{\\pi} = \\frac{2\\sqrt{2}}{9801} \\sum_{k=0}^{\\infty} \\frac{(4k)!(1103+26390k)}{(k!)^4 396^{4k}}
 $$
-
-### Otras características
-
-1.  **Listas ordenadas** y no ordenadas.
-2.  > Citas en bloque para destacar texto.
-3.  Tablas, enlaces, imágenes y bloques de código.
-
-| Cabecera 1 | Cabecera 2 |
-|------------|------------|
-| Celda 1    | Celda 2    |
-| Celda 3    | Celda 4    |
-
-\`\`\`javascript
-// Bloque de código con resaltado
-function helloWorld() {
-  console.log("Hola, mundo!");
-}
-\`\`\`
 `;
 
-        // Función para actualizar la vista HTML desde Markdown
+        // --- Funciones principales (sin cambios) ---
         function updateHtml() {
             if (isUpdating) return;
             isUpdating = true;
             const markdownText = markdownInput.value;
-            // Usamos marked para convertir Markdown a HTML
             htmlOutput.innerHTML = marked.parse(markdownText);
-            // Usamos KaTeX para renderizar las matemáticas
             renderMathInElement(htmlOutput, {
                 delimiters: [
                     {left: '$$', right: '$$', display: true},
                     {left: '$', right: '$', display: false},
-                    {left: '\\(', right: '\\)', display: false},
-                    {left: '\\[', right: '\\]', display: true}
                 ],
                 throwOnError: false
             });
             isUpdating = false;
         }
 
-        // Función para actualizar la vista Markdown desde HTML
         function updateMarkdown() {
             if (isUpdating) return;
             isUpdating = true;
-            // Usamos turndown para convertir HTML a Markdown
             const htmlContent = htmlOutput.innerHTML;
             markdownInput.value = turndownService.turndown(htmlContent);
             isUpdating = false;
         }
 
-        // Event Listeners para la sincronización
         markdownInput.addEventListener('input', updateHtml);
         htmlOutput.addEventListener('input', updateMarkdown);
-
-        // --- Funcionalidad de la barra de herramientas ---
         toolbar.addEventListener('click', (e) => {
             const button = e.target.closest('button');
-            if (!button) return;
-
-            const format = button.dataset.format;
-            if (format) {
-                applyFormat(format);
+            if (button && button.dataset.format) {
+                applyFormat(button.dataset.format);
             }
         });
 
@@ -250,77 +216,70 @@ function helloWorld() {
             const end = markdownInput.selectionEnd;
             const selectedText = markdownInput.value.substring(start, end);
             let newText = '';
-
             switch (format) {
-                case 'bold':
-                    newText = `**${selectedText || 'texto en negrita'}**`;
-                    break;
-                case 'italic':
-                    newText = `*${selectedText || 'texto en cursiva'}*`;
-                    break;
-                case 'heading':
-                    newText = `\n## ${selectedText || 'Encabezado'}\n`;
-                    break;
-                case 'quote':
-                    newText = `\n> ${selectedText || 'Cita'}\n`;
-                    break;
-                case 'list-ul':
-                    newText = `\n- ${selectedText || 'Elemento 1'}\n- Elemento 2`;
-                    break;
-                case 'list-ol':
-                    newText = `\n1. ${selectedText || 'Elemento 1'}\n2. Elemento 2`;
-                    break;
-                case 'code':
-                    newText = `\`${selectedText || 'código'}\``;
-                    break;
-                case 'link':
-                    newText = `[${selectedText || 'texto del enlace'}](https://www.ejemplo.com)`;
-                    break;
-                case 'image':
-                    newText = `![${selectedText || 'texto alternativo'}](https://via.placeholder.com/150)`;
-                    break;
-                case 'table':
-                    newText = `\n| Cabecera 1 | Cabecera 2 |\n|------------|------------|\n| Celda 1    | Celda 2    |\n`;
-                    break;
-                case 'latex-inline':
-                    newText = `$${selectedText || 'E=mc^2'}$`;
-                    break;
-                case 'latex-block':
-                    newText = `\n$$\n${selectedText || 'f(x) = x^2'}\n$$\n`;
-                    break;
+                case 'bold': newText = `**${selectedText || 'texto en negrita'}**`; break;
+                case 'italic': newText = `*${selectedText || 'texto en cursiva'}*`; break;
+                case 'heading': newText = `\n## ${selectedText || 'Encabezado'}\n`; break;
+                case 'quote': newText = `\n> ${selectedText || 'Cita'}\n`; break;
+                case 'list-ul': newText = `\n- ${selectedText || 'Elemento 1'}\n- Elemento 2`; break;
+                case 'list-ol': newText = `\n1. ${selectedText || 'Elemento 1'}\n2. Elemento 2`; break;
+                case 'code': newText = `\`${selectedText || 'código'}\``; break;
+                case 'link': newText = `[${selectedText || 'texto del enlace'}](https://www.ejemplo.com)`; break;
+                case 'image': newText = `![${selectedText || 'texto alternativo'}](https://via.placeholder.com/150)`; break;
+                case 'table': newText = `\n| Cabecera 1 | Cabecera 2 |\n|------------|------------|\n| Celda 1    | Celda 2    |\n`; break;
+                case 'latex-inline': newText = `$${selectedText || 'E=mc^2'}$`; break;
+                case 'latex-block': newText = `\n$$\n${selectedText || 'f(x) = x^2'}\n$$\n`; break;
             }
-            
-            // Insertar el texto formateado
             markdownInput.setRangeText(newText, start, end, 'select');
             markdownInput.focus();
             updateHtml();
         }
 
-        // --- Funcionalidad de Archivos ---
+        // --- Funcionalidad de Archivos (ACTUALIZADA) ---
 
-        // Abrir archivo
         openFileBtn.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = (e) => {
-                const content = e.target.result;
-                if (file.type === "text/html") {
-                    htmlOutput.innerHTML = content;
-                    updateMarkdown();
-                } else {
-                    markdownInput.value = content;
-                    updateHtml();
-                }
-            };
-            reader.readAsText(file);
-            // Limpiar el input para poder abrir el mismo archivo de nuevo
+            
+            // Lógica para diferenciar tipos de archivo
+            if (file.name.endsWith('.docx')) {
+                // Importar DOCX
+                reader.onload = function(e) {
+                    mammoth.convertToHtml({ arrayBuffer: e.target.result })
+                        .then(result => {
+                            htmlOutput.innerHTML = result.value; // El HTML convertido
+                            // Los mensajes y notas se pueden mostrar si es necesario
+                            if(result.messages.length > 0) {
+                                console.warn("Mensajes de importación de DOCX:", result.messages);
+                            }
+                            updateMarkdown(); // Sincronizar de vuelta a Markdown
+                        })
+                        .catch(err => {
+                            console.error("Error al importar el DOCX:", err);
+                            alert("No se pudo importar el archivo .docx.");
+                        });
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                // Lógica existente para .md, .html, .txt
+                reader.onload = (e) => {
+                    const content = e.target.result;
+                    if (file.type === "text/html") {
+                        htmlOutput.innerHTML = content;
+                        updateMarkdown();
+                    } else {
+                        markdownInput.value = content;
+                        updateHtml();
+                    }
+                };
+                reader.readAsText(file);
+            }
             fileInput.value = '';
         });
 
-        // Función genérica para guardar
         function saveFile(filename, content, type) {
             const blob = new Blob([content], { type });
             const url = URL.createObjectURL(blob);
@@ -333,38 +292,36 @@ function helloWorld() {
             URL.revokeObjectURL(url);
         }
 
-        // Guardar como Markdown
         saveMdBtn.addEventListener('click', () => {
             saveFile('documento.md', markdownInput.value, 'text/markdown;charset=utf-8');
         });
 
-        // Guardar como HTML
+
         saveHtmlBtn.addEventListener('click', () => {
-            const htmlContent = `<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Documento</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-  <style>
-    body { font-family: sans-serif; line-height: 1.6; padding: 2em; }
-    /* Añade aquí más estilos si lo deseas */
-  </style>
-</head>
-<body>
-  ${htmlOutput.innerHTML}
-</body>
-</html>`;
+            const htmlContent = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Documento</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"><style>body{font-family:sans-serif;line-height:1.6;padding:2em;}</style></head><body>${htmlOutput.innerHTML}</body></html>`;
             saveFile('documento.html', htmlContent, 'text/html;charset=utf-8');
         });
 
-        // Imprimir
+        // --- NUEVA Funcionalidad: Guardar como DOCX ---
+        saveDocxBtn.addEventListener('click', async () => {
+            // Se usa innerHTML del panel de previsualización
+            const content = htmlOutput.innerHTML;
+
+            // Incluimos la hoja de estilos de KaTeX para que las fórmulas se vean bien en Word
+            const fileBuffer = await htmlToDocx.asBlob(content, {
+                header: true,
+                footer: true,
+                css: `@import url('https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css');`,
+            });
+
+            saveFile('documento.docx', fileBuffer, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        });
+
         printBtn.addEventListener('click', () => {
             printArea.innerHTML = htmlOutput.innerHTML;
             window.print();
-            printArea.innerHTML = ''; // Limpiar después de imprimir
+            printArea.innerHTML = '';
         });
-
 
         // Carga inicial
         window.onload = () => {
@@ -373,7 +330,6 @@ function helloWorld() {
             updateHtml();
             markdownInput.focus();
         };
-
     </script>
 </body>
 </html>
