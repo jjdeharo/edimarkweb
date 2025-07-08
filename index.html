@@ -12,7 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/turndown/7.1.1/turndown.min.js" defer></script>
 
-    <!-- KaTeX para fórmulas LaTeX (integrity corregido) -->
+    <!-- KaTeX para renderizar fórmulas LaTeX (integrity corregido) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0KOVEMVIhbGKLCePo231CVQSHcLesaPSub69DVZXucRepAS5rPjer" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" xintegrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" defer></script>
@@ -20,53 +20,43 @@
     <!-- Lucide Icons -->
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.523.0/dist/umd/lucide.min.js" defer></script>
 
-    <!-- Highlight.js para resaltado de código -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" defer></script>
-
-    <!-- Reveal.js para modo presentación -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/theme/black.min.css" id="reveal-theme">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.js"></script>
-
     <style>
-        /* Estilos personalizados */
-        :root {
-            --bg-light: #f0f2f5; --text-light: #111827; --card-bg-light: #ffffff; --border-light: #d1d5db;
-            --bg-dark: #1f2937; --text-dark: #d1d5db; --card-bg-dark: #374151; --border-dark: #4b5563;
-        }
-        .dark {
-            --bg: var(--bg-dark); --text: var(--text-dark); --card-bg: var(--card-bg-dark); --border: var(--border-dark);
-        }
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: var(--bg, var(--bg-light));
-            color: var(--text, var(--text-light));
-            transition: background-color 0.3s, color 0.3s;
-        }
-        .prose { color: inherit; }
-        .dark .prose { --tw-prose-body: var(--text-dark); --tw-prose-headings: #ffffff; --tw-prose-links: #93c5fd; --tw-prose-bold: #ffffff; --tw-prose-code: #f97316; --tw-prose-quotes: #d1d5db; --tw-prose-quote-borders: #6b7280; --tw-prose-hr: var(--border-dark); }
-        .card { background-color: var(--card-bg, var(--card-bg-light)); border-color: var(--border, var(--border-light)); transition: background-color 0.3s, border-color 0.3s; }
+        /* Estilos personalizados sin @apply */
+        body { font-family: 'Inter', sans-serif; background-color: #f0f2f5; }
         .editor-pane {
-            height: calc(100vh - 14.5rem); border: 1px solid var(--border, var(--border-light)); border-radius: 0.5rem;
-            padding: 1rem; overflow-y: auto; background-color: var(--card-bg, var(--card-bg-light));
+            height: calc(100vh - 12rem); /* Altura ajustada */
+            border: 1px solid #d1d5db; border-radius: 0.5rem;
+            padding: 1rem; overflow-y: auto; background-color: #ffffff; transition: box-shadow 0.2s;
         }
-        .toolbar-btn, .copy-btn { color: var(--text, var(--text-light)); padding: 0.5rem; border-radius: 0.375rem; transition: background-color 0.2s; }
-        .toolbar-btn:hover, .copy-btn:hover { background-color: var(--bg, var(--bg-light)); }
-        .file-btn { padding: 0.5rem 1rem; border-radius: 0.375rem; font-size: 0.875rem; font-weight: 500; display: flex; align-items: center; gap: 0.5rem; transition: background-color 0.2s; }
+        .editor-pane:focus { outline: none; box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5); }
+        #markdown-input, #html-source-view { font-family: 'Fira Code', 'Courier New', monospace; font-size: 14px; line-height: 1.6; }
+        #html-output { font-family: 'Inter', sans-serif; }
+        .toolbar-btn, .copy-btn {
+            padding: 0.5rem; border-radius: 0.375rem; color: #4b5563;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .toolbar-btn:hover, .copy-btn:hover { background-color: #e5e7eb; color: #111827; }
+        .file-btn {
+            padding: 0.5rem 1rem; border-radius: 0.375rem; font-size: 0.875rem;
+            font-weight: 500; display: flex; align-items: center; gap: 0.5rem;
+            transition: background-color 0.2s;
+        }
         
-        #presentation-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 100; }
-        #close-presentation-btn { position: fixed; top: 20px; right: 20px; z-index: 110; }
+        /* Estilos para la impresión */
+        @media print {
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { position: absolute; left: 0; top: 0; width: 100%; }
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
     <header class="flex flex-wrap justify-between items-center mb-4">
-        <h1 class="text-2xl font-bold">EdiMarkWeb: Editor Markdown &harr; HTML</h1>
+        <h1 class="text-2xl font-bold text-gray-800">EdiMarkWeb: Editor Markdown &harr; HTML</h1>
         <div class="flex items-center gap-2 mt-2 sm:mt-0 flex-wrap">
-            <button id="theme-toggle-btn" class="file-btn bg-gray-500 text-white hover:bg-gray-600"><i data-lucide="sun"></i></button>
-            <button id="presentation-btn" class="file-btn bg-purple-500 text-white hover:bg-purple-600"><i data-lucide="presentation"></i> Presentación</button>
             <button id="open-file-btn" class="file-btn bg-blue-500 text-white hover:bg-blue-600"><i data-lucide="folder-open"></i> Abrir</button>
+            <input type="file" id="file-input" class="hidden" accept=".md,.txt,.html">
             <button id="save-btn" class="file-btn bg-green-500 text-white hover:bg-green-600"><i data-lucide="save"></i> Guardar</button>
             <button id="print-btn" class="file-btn bg-gray-600 text-white hover:bg-gray-700"><i data-lucide="printer"></i> Imprimir</button>
             <button id="clear-all-btn" class="file-btn bg-red-500 text-white hover:bg-red-600"><i data-lucide="trash-2"></i> Borrar todo</button>
@@ -74,7 +64,8 @@
     </header>
 
     <!-- Barra de herramientas de formato -->
-    <div id="toolbar" class="card p-2 rounded-lg shadow-md mb-4 flex flex-wrap items-center gap-2 border">
+    <div id="toolbar" class="bg-white p-2 rounded-lg shadow-md mb-4 flex flex-wrap items-center gap-2 border">
+        <!-- Grupo 1: Formato básico -->
         <div class="flex items-center gap-1">
             <button class="toolbar-btn" data-format="bold" title="Negrita"><i data-lucide="bold"></i></button>
             <button class="toolbar-btn" data-format="italic" title="Cursiva"><i data-lucide="italic"></i></button>
@@ -89,12 +80,14 @@
             </div>
         </div>
         <div class="border-l h-6 border-gray-300"></div>
+        <!-- Grupo 2: Bloques -->
         <div class="flex items-center gap-1">
             <button class="toolbar-btn" data-format="quote" title="Cita"><i data-lucide="quote"></i></button>
             <button class="toolbar-btn" data-format="list-ul" title="Lista"><i data-lucide="list"></i></button>
             <button class="toolbar-btn" data-format="list-ol" title="Lista numerada"><i data-lucide="list-ordered"></i></button>
         </div>
         <div class="border-l h-6 border-gray-300"></div>
+        <!-- Grupo 3: Inserciones -->
         <div class="flex items-center gap-1">
             <button class="toolbar-btn" data-format="code" title="Código"><i data-lucide="code-2"></i></button>
             <button class="toolbar-btn" data-format="link" title="Enlace"><i data-lucide="link"></i></button>
@@ -102,6 +95,7 @@
             <button class="toolbar-btn" data-format="table" title="Tabla"><i data-lucide="table"></i></button>
         </div>
         <div class="border-l h-6 border-gray-300"></div>
+        <!-- Grupo 4: LaTeX -->
         <div class="flex items-center gap-1">
             <button class="toolbar-btn" data-format="latex-inline" title="Fórmula LaTeX (en línea)"><i data-lucide="sigma"></i></button>
             <button class="toolbar-btn" data-format="latex-block" title="Fórmula LaTeX (bloque)"><i data-lucide="function-square"></i></button>
@@ -112,62 +106,87 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
             <div class="flex justify-between items-center mb-2">
-                <h2 class="text-lg font-semibold">Markdown</h2>
+                <h2 class="text-lg font-semibold text-gray-700">Markdown</h2>
                 <button id="copy-md-btn" class="copy-btn" title="Copiar Markdown"><i data-lucide="copy"></i></button>
             </div>
             <textarea id="markdown-input" class="editor-pane w-full"></textarea>
-            <div id="counter" class="text-sm text-right mt-1 pr-2">0 palabras / 0 caracteres</div>
         </div>
         <div>
+            <!-- Cabecera del panel derecho con interruptor de vista -->
             <div class="flex justify-between items-center mb-2">
-                <h2 id="html-panel-title" class="text-lg font-semibold">Previsualización</h2>
+                <h2 id="html-panel-title" class="text-lg font-semibold text-gray-700">Previsualización</h2>
                 <div class="flex items-center gap-2">
-                    <button id="view-toggle-btn" class="toolbar-btn" title="Cambiar a vista de código"><i data-lucide="code-2"></i></button>
+                    <button id="view-toggle-btn" class="toolbar-btn" title="Cambiar a vista de código">
+                        <i data-lucide="code-2"></i>
+                    </button>
                     <button id="copy-html-btn" class="copy-btn" title="Copiar HTML"><i data-lucide="copy"></i></button>
                 </div>
             </div>
-            <div id="html-output" class="editor-pane w-full prose dark:prose-invert max-w-none"></div>
+            <div id="html-output" contenteditable="true" class="editor-pane w-full prose max-w-none"></div>
             <textarea id="html-source-view" class="editor-pane w-full hidden"></textarea>
         </div>
     </div>
 
-    <!-- Contenedor para el modo presentación -->
-    <div id="presentation-container" class="hidden">
-        <div class="reveal">
-            <div class="slides"></div>
-        </div>
-        <button id="close-presentation-btn" class="file-btn bg-red-500 text-white"><i data-lucide="x"></i></button>
-    </div>
+    <!-- Contenedor para impresión -->
+    <div id="print-area" class="hidden prose max-w-none"></div>
 
     <!-- Modales -->
-    <div id="table-modal-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">...</div>
-    <div id="save-modal-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">...</div>
+    <div id="table-modal-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
+        <div id="table-modal" class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
+            <h3 class="text-lg font-bold mb-4">Crear tabla</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="table-cols" class="block text-sm font-medium text-gray-700">Columnas</label>
+                    <input type="number" id="table-cols" value="3" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                </div>
+                <div>
+                    <label for="table-rows" class="block text-sm font-medium text-gray-700">Filas (de datos)</label>
+                    <input type="number" id="table-rows" value="2" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button id="cancel-table-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
+                <button id="create-table-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Crear</button>
+            </div>
+        </div>
+    </div>
+    <div id="save-modal-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
+        <div id="save-modal" class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
+            <h3 class="text-lg font-bold mb-4">Guardar como...</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="filename" class="block text-sm font-medium text-gray-700">Nombre del archivo</label>
+                    <input type="text" id="filename" value="documento" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Formato</label>
+                    <div class="mt-2 space-y-2">
+                        <div class="flex items-center">
+                            <input id="format-md" name="save-format" type="radio" checked class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300">
+                            <label for="format-md" class="ml-3 block text-sm font-medium text-gray-700">Markdown (.md)</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input id="format-html" name="save-format" type="radio" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300">
+                            <label for="format-html" class="ml-3 block text-sm font-medium text-gray-700">HTML (.html)</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button id="cancel-save-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
+                <button id="confirm-save-btn" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">Guardar</button>
+            </div>
+        </div>
+    </div>
 
     <script>
+        // Declaración de variables globales
         let turndownService;
         let isUpdating = false;
-        let revealInstance;
 
         const initialContent = `# ¡Bienvenido a EdiMarkWeb!
-
-Este es un editor **versátil**. Escribe en *Markdown* y observa la magia.
-
-## ¿Qué puedes hacer?
-
-1.  **Escribir fórmulas**: Ideal para matemáticas.
-    \\[
-    x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}
-    \\]
-2.  **Mostrar código**: Útil para digitalización.
-    \`\`\`python
-    def saludar():
-        print("¡Hola, mundo!")
-    \`\`\`
-
----
-
-¡Y cuando termines, pulsa el botón de **Presentación** para ver tus notas como diapositivas!
-`;
+        
+Usa la barra de herramientas para dar formato a tu texto, insertar elementos y mucho más.`;
 
         // --- Funciones principales ---
         function updateHtml() {
@@ -178,41 +197,46 @@ Este es un editor **versátil**. Escribe en *Markdown* y observa la magia.
             const htmlSourceView = document.getElementById('html-source-view');
 
             let markdownText = markdownInput.value;
+            markdownText = markdownText.replace(/\\\\/g, '\\\\\\\\');
+            markdownText = markdownText.replace(/\\\[/g, '\\\\[').replace(/\\\]/g, '\\\\]');
+            markdownText = markdownText.replace(/\\\(/g, '\\\\(').replace(/\\\)/g, '\\\\)');
             
             if (window.marked) {
-                htmlOutput.innerHTML = marked.parse(markdownText);
-                htmlSourceView.value = htmlOutput.innerHTML;
+                const rawHtml = marked.parse(markdownText);
+                htmlOutput.innerHTML = rawHtml;
+                htmlSourceView.value = rawHtml;
             }
 
-            // Renderizar LaTeX
             try {
-                if (window.renderMathInElement) { renderMathInElement(htmlOutput, { delimiters: [ {left: '$$', right: '$$', display: true}, {left: '\\[', right: '\\]', display: true}, {left: '$', right: '$', display: false}, {left: '\\(', right: '\\)', display: false} ], throwOnError: false }); }
-            } catch (e) { console.warn("KaTeX no está listo."); }
-
-            // Resaltar código
-            try {
-                if (window.hljs) { document.querySelectorAll('pre code').forEach((block) => { hljs.highlightElement(block); }); }
-            } catch (e) { console.warn("Highlight.js no está listo."); }
-
-            updateCounter();
+                if (window.renderMathInElement) {
+                    renderMathInElement(htmlOutput, {
+                        delimiters: [
+                            {left: '$$', right: '$$', display: true}, {left: '\\[', right: '\\]', display: true},
+                            {left: '$', right: '$', display: false}, {left: '\\(', right: '\\)', display: false}
+                        ], throwOnError: false
+                    });
+                }
+            } catch (error) { console.warn("KaTeX no está listo.", error); }
             isUpdating = false;
         }
 
-        function updateCounter() {
+        function updateMarkdown() {
+            if (isUpdating) return;
+            isUpdating = true;
             const markdownInput = document.getElementById('markdown-input');
-            const counter = document.getElementById('counter');
-            const text = markdownInput.value;
-            const words = text.match(/\b\w+\b/g) || [];
-            counter.textContent = `${words.length} palabras / ${text.length} caracteres`;
+            const htmlOutput = document.getElementById('html-output');
+            if (turndownService) {
+                markdownInput.value = turndownService.turndown(htmlOutput.innerHTML);
+            }
+            isUpdating = false;
         }
-        
+
         function applyFormat(format) {
             const markdownInput = document.getElementById('markdown-input');
             const start = markdownInput.selectionStart;
             const end = markdownInput.selectionEnd;
             const selectedText = markdownInput.value.substring(start, end);
             let newText = '';
-
             switch (format) {
                 case 'bold': newText = `**${selectedText || 'texto en negrita'}**`; break;
                 case 'italic': newText = `*${selectedText || 'texto en cursiva'}*`; break;
@@ -226,85 +250,236 @@ Este es un editor **versátil**. Escribe en *Markdown* y observa la magia.
                 case 'code': newText = `\`${selectedText || 'código'}\``; break;
                 case 'link': newText = `[${selectedText || 'texto del enlace'}](https://www.ejemplo.com)`; break;
                 case 'image': newText = `![${selectedText || 'texto alternativo'}](https://via.placeholder.com/150)`; break;
-                case 'table': document.getElementById('table-modal-overlay').style.display = 'flex'; return;
+                case 'table': toggleTableModal(true); return;
                 case 'latex-inline': newText = `$${selectedText || 'E=mc^2'}$`; break;
                 case 'latex-block': newText = `\n\\[\n${selectedText || 'f(x) = x^2'}\n\\]\n`; break;
             }
-            
-            markdownInput.setRangeText(newText, start, end, 'end');
+            markdownInput.setRangeText(newText, start, end, 'select');
             markdownInput.focus();
             updateHtml();
         }
+
+        function toggleTableModal(show) {
+            document.getElementById('table-modal-overlay').style.display = show ? 'flex' : 'none';
+        }
+
+        function toggleSaveModal(show) {
+            document.getElementById('save-modal-overlay').style.display = show ? 'flex' : 'none';
+        }
         
+        function saveFile(filename, content, type) {
+            const blob = new Blob([content], { type });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(a.href);
+        }
+
+        function copyToClipboard(text, btn) {
+            const originalIcon = btn.innerHTML;
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.style.position = 'fixed';
+            tempTextArea.style.top = '-9999px';
+            tempTextArea.style.left = '-9999px';
+            tempTextArea.value = text;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.focus();
+            tempTextArea.select();
+
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    btn.innerHTML = '<i data-lucide="check" class="text-green-500"></i>';
+                } else {
+                    btn.innerHTML = '<i data-lucide="x" class="text-red-500"></i>';
+                }
+            } catch (err) {
+                console.error('Error al intentar copiar:', err);
+                btn.innerHTML = '<i data-lucide="x" class="text-red-500"></i>';
+            }
+
+            document.body.removeChild(tempTextArea);
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+            
+            setTimeout(() => {
+                btn.innerHTML = originalIcon;
+                if (window.lucide) {
+                    lucide.createIcons();
+                }
+            }, 2000);
+        }
+
         // Carga inicial
         window.onload = () => {
-            // ... (inicialización de elementos del DOM)
-            const themeToggleBtn = document.getElementById('theme-toggle-btn');
-            const presentationBtn = document.getElementById('presentation-btn');
-            const closePresentationBtn = document.getElementById('close-presentation-btn');
-            const presentationContainer = document.getElementById('presentation-container');
+            // Inicialización de elementos del DOM
             const markdownInput = document.getElementById('markdown-input');
+            const htmlOutput = document.getElementById('html-output');
+            const htmlSourceView = document.getElementById('html-source-view');
+            const viewToggleBtn = document.getElementById('view-toggle-btn');
+            const htmlPanelTitle = document.getElementById('html-panel-title');
+            const toolbar = document.getElementById('toolbar');
+            const openFileBtn = document.getElementById('open-file-btn');
+            const fileInput = document.getElementById('file-input');
+            const saveBtn = document.getElementById('save-btn');
+            const printBtn = document.getElementById('print-btn');
+            const clearAllBtn = document.getElementById('clear-all-btn');
+            const copyMdBtn = document.getElementById('copy-md-btn');
+            const copyHtmlBtn = document.getElementById('copy-html-btn');
+            const tableModalOverlay = document.getElementById('table-modal-overlay');
+            const createTableBtn = document.getElementById('create-table-btn');
+            const cancelTableBtn = document.getElementById('cancel-table-btn');
+            const saveModalOverlay = document.getElementById('save-modal-overlay');
+            const confirmSaveBtn = document.getElementById('confirm-save-btn');
+            const cancelSaveBtn = document.getElementById('cancel-save-btn');
+            const headingBtn = document.getElementById('heading-btn');
+            const headingOptions = document.getElementById('heading-options');
+            const headingDropdownContainer = document.getElementById('heading-dropdown-container');
 
             // Inicialización de librerías
-            if (window.TurndownService) { turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' }); }
+            if (window.TurndownService) {
+                turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
+            }
 
-            // --- Lógica del tema ---
-            const applyTheme = (theme) => {
-                const icon = theme === 'dark' ? 'sun' : 'moon';
-                themeToggleBtn.innerHTML = `<i data-lucide="${icon}"></i>`;
-                if (theme === 'dark') {
-                    document.documentElement.classList.add('dark');
-                } else {
-                    document.documentElement.classList.remove('dark');
-                }
-                if (window.lucide) { lucide.createIcons(); }
-            };
-
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            applyTheme(savedTheme);
-
-            themeToggleBtn.addEventListener('click', () => {
-                const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-                localStorage.setItem('theme', newTheme);
-                applyTheme(newTheme);
-            });
-
-            // --- Lógica del modo presentación ---
-            presentationBtn.addEventListener('click', () => {
-                const slidesContainer = presentationContainer.querySelector('.slides');
-                const markdownText = document.getElementById('markdown-input').value;
-                const slides = markdownText.split(/^\s*---\s*$/m);
-
-                slidesContainer.innerHTML = slides.map(slideContent => 
-                    `<section data-markdown><textarea data-template>${slideContent.trim()}</textarea></section>`
-                ).join('');
-
-                presentationContainer.classList.remove('hidden');
-                
-                if (revealInstance) {
-                    revealInstance.destroy();
-                }
-                revealInstance = new Reveal(presentationContainer.querySelector('.reveal'), {
-                    markdown: {
-                        smartypants: true
-                    },
-                    plugins: [] // No plugins needed for this basic setup
-                });
-                revealInstance.initialize();
-            });
-
-            closePresentationBtn.addEventListener('click', () => {
-                presentationContainer.classList.add('hidden');
-                if (revealInstance) {
-                    revealInstance.destroy();
-                    revealInstance = null;
-                }
-            });
-
-            // ... (resto de la lógica de `onload`)
+            // Asignación de eventos
             markdownInput.addEventListener('input', updateHtml);
+            htmlOutput.addEventListener('input', updateMarkdown);
+            htmlSourceView.addEventListener('input', () => {
+                if (isUpdating) return;
+                isUpdating = true;
+                htmlOutput.innerHTML = htmlSourceView.value;
+                updateMarkdown();
+                isUpdating = false;
+            });
+
+            toolbar.addEventListener('click', (e) => {
+                const button = e.target.closest('button');
+                if (button && button.dataset.format) {
+                    applyFormat(button.dataset.format);
+                    if (button.dataset.format.startsWith('heading-')) {
+                        headingOptions.classList.add('hidden');
+                    }
+                }
+            });
+
+            headingBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                headingOptions.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!headingDropdownContainer.contains(e.target)) {
+                    headingOptions.classList.add('hidden');
+                }
+            });
+
+            viewToggleBtn.addEventListener('click', () => {
+                const isPreviewVisible = !htmlOutput.classList.contains('hidden');
+                htmlOutput.classList.toggle('hidden');
+                htmlSourceView.classList.toggle('hidden');
+
+                if (isPreviewVisible) {
+                    htmlPanelTitle.textContent = 'Código HTML';
+                    viewToggleBtn.title = 'Cambiar a previsualización';
+                    viewToggleBtn.innerHTML = '<i data-lucide="eye"></i>';
+                } else {
+                    htmlPanelTitle.textContent = 'Previsualización';
+                    viewToggleBtn.title = 'Cambiar a vista de código';
+                    viewToggleBtn.innerHTML = '<i data-lucide="code-2"></i>';
+                }
+                if (window.lucide) {
+                    lucide.createIcons();
+                }
+            });
+
+            htmlOutput.addEventListener('click', (e) => {
+                const link = e.target.closest('a');
+                if (link && link.href) {
+                    if (!e.ctrlKey && !e.metaKey) {
+                        e.preventDefault();
+                        window.open(link.href, '_blank', 'noopener,noreferrer');
+                    }
+                }
+            });
+
+            createTableBtn.addEventListener('click', () => {
+                const cols = parseInt(document.getElementById('table-cols').value, 10) || 2;
+                const rows = parseInt(document.getElementById('table-rows').value, 10) || 1;
+                let tableMd = '\n';
+                tableMd += '|';
+                for (let i = 1; i <= cols; i++) { tableMd += ` Cabecera ${i} |`; }
+                tableMd += '\n|';
+                for (let i = 0; i < cols; i++) { tableMd += '------------|'; }
+                tableMd += '\n';
+                for (let r = 0; r < rows; r++) {
+                    tableMd += '|';
+                    for (let c = 0; c < cols; c++) { tableMd += ' Celda      |'; }
+                    tableMd += '\n';
+                }
+                const start = markdownInput.selectionStart;
+                const end = markdownInput.selectionEnd;
+                markdownInput.setRangeText(tableMd, start, end, 'end');
+                toggleTableModal(false);
+                markdownInput.focus();
+                updateHtml();
+            });
+            cancelTableBtn.addEventListener('click', () => toggleTableModal(false));
+            tableModalOverlay.addEventListener('click', (e) => { if (e.target === tableModalOverlay) { toggleTableModal(false); } });
             
+            saveBtn.addEventListener('click', () => toggleSaveModal(true));
+            confirmSaveBtn.addEventListener('click', () => {
+                const filenameInput = document.getElementById('filename');
+                const filename = filenameInput.value || 'documento';
+                const isMd = document.getElementById('format-md').checked;
+
+                if (isMd) {
+                    saveFile(`${filename}.md`, markdownInput.value, 'text/markdown;charset=utf-8');
+                } else {
+                    const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"></head><body class="prose">${htmlOutput.innerHTML}</body></html>`;
+                    saveFile(`${filename}.html`, htmlContent, 'text/html;charset=utf-8');
+                }
+                toggleSaveModal(false);
+            });
+            cancelSaveBtn.addEventListener('click', () => toggleSaveModal(false));
+            saveModalOverlay.addEventListener('click', (e) => { if (e.target === saveModalOverlay) { toggleSaveModal(false); } });
+
+            openFileBtn.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    if (file.name.endsWith(".html")) { 
+                        htmlOutput.innerHTML = e.target.result; 
+                        updateMarkdown(); 
+                    } else { 
+                        markdownInput.value = e.target.result; 
+                        updateHtml(); 
+                    }
+                };
+                reader.readAsText(file);
+                fileInput.value = '';
+            });
+            
+            copyMdBtn.addEventListener('click', () => copyToClipboard(markdownInput.value, copyMdBtn));
+            copyHtmlBtn.addEventListener('click', () => copyToClipboard(htmlOutput.innerHTML, copyHtmlBtn));
+            printBtn.addEventListener('click', () => {
+                const printArea = document.getElementById('print-area');
+                printArea.innerHTML = htmlOutput.innerHTML;
+                printArea.classList.remove('hidden');
+                window.print();
+                printArea.classList.add('hidden');
+            });
+
+            clearAllBtn.addEventListener('click', () => {
+                markdownInput.value = '';
+                updateHtml();
+            });
+
             // Carga final
             if (window.lucide) {
                 lucide.createIcons();
