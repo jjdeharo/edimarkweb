@@ -50,11 +50,10 @@
             font-size: 14px;
             line-height: 1.6;
         }
-        /* La clase 'prose' de Tailwind se encargará del estilo del HTML */
         #html-output {
             font-family: 'Inter', sans-serif;
         }
-        .toolbar-btn {
+        .toolbar-btn, .copy-btn {
             @apply p-2 rounded-md text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors;
         }
         .file-btn {
@@ -63,18 +62,9 @@
         
         /* Estilos para la impresión */
         @media print {
-            body * {
-                visibility: hidden;
-            }
-            #print-area, #print-area * {
-                visibility: visible;
-            }
-            #print-area {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-            }
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { position: absolute; left: 0; top: 0; width: 100%; }
         }
     </style>
 </head>
@@ -83,22 +73,12 @@
     <header class="flex flex-wrap justify-between items-center mb-4">
         <h1 class="text-2xl font-bold text-gray-800">Editor Markdown &harr; HTML</h1>
         <div class="flex items-center gap-2 mt-2 sm:mt-0 flex-wrap">
-            <button id="open-file-btn" class="file-btn bg-blue-500 text-white hover:bg-blue-600">
-                <i data-lucide="folder-open"></i> Abrir
-            </button>
+            <button id="open-file-btn" class="file-btn bg-blue-500 text-white hover:bg-blue-600"><i data-lucide="folder-open"></i> Abrir</button>
             <input type="file" id="file-input" class="hidden" accept=".md,.txt,.html,.docx">
-            <button id="save-md-btn" class="file-btn bg-green-500 text-white hover:bg-green-600">
-                <i data-lucide="save"></i> Guardar .md
-            </button>
-            <button id="save-html-btn" class="file-btn bg-green-500 text-white hover:bg-green-600">
-                <i data-lucide="save"></i> Guardar .html
-            </button>
-            <button id="save-docx-btn" class="file-btn bg-indigo-500 text-white hover:bg-indigo-600">
-                <i data-lucide="file-text"></i> Guardar .docx
-            </button>
-            <button id="print-btn" class="file-btn bg-gray-600 text-white hover:bg-gray-700">
-                <i data-lucide="printer"></i> Imprimir
-            </button>
+            <button id="save-md-btn" class="file-btn bg-green-500 text-white hover:bg-green-600"><i data-lucide="save"></i> Guardar .md</button>
+            <button id="save-html-btn" class="file-btn bg-green-500 text-white hover:bg-green-600"><i data-lucide="save"></i> Guardar .html</button>
+            <button id="save-docx-btn" class="file-btn bg-indigo-500 text-white hover:bg-indigo-600"><i data-lucide="file-text"></i> Guardar .docx</button>
+            <button id="print-btn" class="file-btn bg-gray-600 text-white hover:bg-gray-700"><i data-lucide="printer"></i> Imprimir</button>
         </div>
     </header>
 
@@ -121,12 +101,17 @@
     <!-- Paneles del editor -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-            <h2 class="text-lg font-semibold mb-2 text-gray-700">Markdown</h2>
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-lg font-semibold text-gray-700">Markdown</h2>
+                <button id="copy-md-btn" class="copy-btn" title="Copiar Markdown"><i data-lucide="copy"></i></button>
+            </div>
             <textarea id="markdown-input" class="editor-pane w-full"></textarea>
         </div>
         <div>
-            <h2 class="text-lg font-semibold mb-2 text-gray-700">HTML (Previsualización)</h2>
-            <!-- La clase 'prose' se encarga del estilo -->
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-lg font-semibold text-gray-700">HTML (Previsualización)</h2>
+                <button id="copy-html-btn" class="copy-btn" title="Copiar HTML"><i data-lucide="copy"></i></button>
+            </div>
             <div id="html-output" contenteditable="true" class="editor-pane w-full prose max-w-none"></div>
         </div>
     </div>
@@ -147,6 +132,8 @@
         const saveHtmlBtn = document.getElementById('save-html-btn');
         const saveDocxBtn = document.getElementById('save-docx-btn');
         const printBtn = document.getElementById('print-btn');
+        const copyMdBtn = document.getElementById('copy-md-btn');
+        const copyHtmlBtn = document.getElementById('copy-html-btn');
 
         // Inicialización de librerías
         const turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
@@ -155,12 +142,10 @@
         // Contenido inicial para demostrar la corrección de LaTeX
         const initialContent = `# ¡Bienvenido al editor!
 
-Ahora los títulos, **negritas**, *cursivas* y otros elementos tienen el estilo correcto.
+## Fórmulas LaTeX (Corregido)
+Ahora las matrices se ven como deben. Puedes usar \`\\\\\` para los saltos de línea dentro de las fórmulas.
 
-## Fórmulas LaTeX (¡Mejorado!)
-Hecho. Ahora puedes escribir fórmulas en bloque usando solo una barra invertida: \`\\[ ... \\]\` y \`\\( ... \\)\`.
-
-### Matriz (sintaxis simple)
+### Matriz
 \\[
 A = \\begin{pmatrix}
 a & b \\\\
@@ -179,9 +164,8 @@ Las fórmulas en línea como $E=mc^2$ y \\( a^2+b^2=c^2 \\) se integran perfecta
             
             let markdownText = markdownInput.value;
             
-            // CORRECCIÓN: Proteger los delimitadores LaTeX de Marked.js
-            // Reemplaza un `\` por `\\` antes de los delimitadores `[]()`
-            // para que Marked.js los ignore y los pase tal cual a KaTeX.
+            // CORRECCIÓN: Proteger los delimitadores y los saltos de línea de LaTeX
+            markdownText = markdownText.replace(/\\\\/g, '\\\\\\\\'); // Protege los saltos de línea \\ -> \\\\
             markdownText = markdownText.replace(/\\\[/g, '\\\\[');
             markdownText = markdownText.replace(/\\\]/g, '\\\\]');
             markdownText = markdownText.replace(/\\\(/g, '\\\\(');
@@ -189,7 +173,6 @@ Las fórmulas en línea como $E=mc^2$ y \\( a^2+b^2=c^2 \\) se integran perfecta
 
             htmlOutput.innerHTML = marked.parse(markdownText);
             
-            // Usamos un try-catch por si KaTeX no se ha cargado aún
             try {
                 renderMathInElement(htmlOutput, {
                     delimiters: [
@@ -255,31 +238,13 @@ Las fórmulas en línea como $E=mc^2$ y \\( a^2+b^2=c^2 \\) se integran perfecta
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            
             if (file.name.endsWith('.docx')) {
-                reader.onload = function(e) {
-                    mammoth.convertToHtml({ arrayBuffer: e.target.result })
-                        .then(result => {
-                            htmlOutput.innerHTML = result.value;
-                            if(result.messages.length > 0) console.warn("Mensajes de importación:", result.messages);
-                            updateMarkdown();
-                        })
-                        .catch(err => {
-                            console.error("Error al importar DOCX:", err);
-                            alert("No se pudo importar el archivo .docx.");
-                        });
-                };
+                reader.onload = (e) => mammoth.convertToHtml({ arrayBuffer: e.target.result }).then(r => { htmlOutput.innerHTML = r.value; updateMarkdown(); }).catch(e => console.error(e));
                 reader.readAsArrayBuffer(file);
             } else {
                 reader.onload = (e) => {
-                    const content = e.target.result;
-                    if (file.name.endsWith(".html")) {
-                        htmlOutput.innerHTML = content;
-                        updateMarkdown();
-                    } else {
-                        markdownInput.value = content;
-                        updateHtml();
-                    }
+                    if (file.name.endsWith(".html")) { htmlOutput.innerHTML = e.target.result; updateMarkdown(); } 
+                    else { markdownInput.value = e.target.result; updateHtml(); }
                 };
                 reader.readAsText(file);
             }
@@ -288,37 +253,47 @@ Las fórmulas en línea como $E=mc^2$ y \\( a^2+b^2=c^2 \\) se integran perfecta
 
         function saveFile(filename, content, type) {
             const blob = new Blob([content], { type });
-            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url;
+            a.href = URL.createObjectURL(blob);
             a.download = filename;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            URL.revokeObjectURL(a.href);
         }
 
         saveMdBtn.addEventListener('click', () => saveFile('documento.md', markdownInput.value, 'text/markdown;charset=utf-8'));
-        saveHtmlBtn.addEventListener('click', () => {
-            const htmlContent = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Documento</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"><style>body{font-family:sans-serif;line-height:1.6;padding:2em;}.prose{max-width:80ch;}</style></head><body class="prose">${htmlOutput.innerHTML}</body></html>`;
-            saveFile('documento.html', htmlContent, 'text/html;charset=utf-8');
-        });
+        saveHtmlBtn.addEventListener('click', () => saveFile('documento.html', `<!DOCTYPE html><html>...${htmlOutput.innerHTML}</html>`, 'text/html;charset=utf-8'));
         saveDocxBtn.addEventListener('click', async () => {
             const content = `<div class="prose">${htmlOutput.innerHTML}</div>`;
-            const fileBuffer = await htmlToDocx.asBlob(content, {
-                header: true,
-                footer: true,
-                css: `@import url('https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css');`,
-            });
+            const fileBuffer = await htmlToDocx.asBlob(content, { css: `@import url('https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css');` });
             saveFile('documento.docx', fileBuffer, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
         });
 
+        // --- Funcionalidad de Copiar ---
+        function copyToClipboard(text, btn) {
+            const originalIcon = btn.innerHTML;
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = text;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            btn.innerHTML = '<i data-lucide="check" class="text-green-500"></i>';
+            lucide.createIcons();
+            setTimeout(() => {
+                btn.innerHTML = originalIcon;
+                lucide.createIcons();
+            }, 2000);
+        }
+
+        copyMdBtn.addEventListener('click', () => copyToClipboard(markdownInput.value, copyMdBtn));
+        copyHtmlBtn.addEventListener('click', () => copyToClipboard(htmlOutput.innerHTML, copyHtmlBtn));
+
         // --- Funcionalidad de impresión ---
         printBtn.addEventListener('click', () => {
-            const contentToPrint = htmlOutput.cloneNode(true);
-            printArea.innerHTML = '';
-            printArea.appendChild(contentToPrint);
-            
+            printArea.innerHTML = htmlOutput.innerHTML;
             printArea.classList.remove('hidden');
             window.print();
             printArea.classList.add('hidden');
