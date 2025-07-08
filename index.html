@@ -14,7 +14,7 @@
     <!-- Turndown para convertir HTML a Markdown -->
     <script src="https://unpkg.com/turndown/dist/turndown.js"></script>
 
-    <!-- KaTeX para renderizar fórmulas LaTeX (CORREGIDO) -->
+    <!-- KaTeX para renderizar fórmulas LaTeX -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0KOVEMVIhbGKLCePo231CVQSHcLesaPSub69DVZXucRepAS5rPjer" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" xintegrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
@@ -61,7 +61,7 @@
             @apply px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2;
         }
         
-        /* Estilos para la impresión (CORREGIDOS) */
+        /* Estilos para la impresión */
         @media print {
             body * {
                 visibility: hidden;
@@ -132,7 +132,7 @@
     </div>
 
     <!-- Contenedor para impresión -->
-    <div id="print-area" class="hidden"></div>
+    <div id="print-area" class="hidden prose max-w-none"></div>
 
 
     <script>
@@ -152,23 +152,15 @@
         const turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
         let isUpdating = false;
 
-        // Contenido inicial para demostrar las correcciones
+        // Contenido inicial para demostrar la corrección de LaTeX
         const initialContent = `# ¡Bienvenido al editor!
 
 Ahora los títulos, **negritas**, *cursivas* y otros elementos tienen el estilo correcto.
 
-## Listas funcionales
-- Este es un elemento de una lista no ordenada.
-- Y este es otro, como puedes ver.
-  - Se pueden anidar listas.
+## Fórmulas LaTeX (¡Mejorado!)
+Hecho. Ahora puedes escribir fórmulas en bloque usando solo una barra invertida: \`\\[ ... \\]\` y \`\\( ... \\)\`.
 
-1. Esta es una lista ordenada.
-2. Con su segundo elemento.
-
-## Fórmulas LaTeX
-Para **matrices y sistemas de ecuaciones**, usa los delimitadores \`\\[ ... \\]\` para mayor seguridad.
-
-### Matriz
+### Matriz (sintaxis simple)
 \\[
 A = \\begin{pmatrix}
 a & b \\\\
@@ -177,14 +169,24 @@ c & d
 \\]
 
 ### Fórmula en línea
-Las fórmulas en línea como $E=mc^2$ se integran perfectamente en el texto.
+Las fórmulas en línea como $E=mc^2$ y \\( a^2+b^2=c^2 \\) se integran perfectamente.
 `;
 
         // --- Funciones principales ---
         function updateHtml() {
             if (isUpdating) return;
             isUpdating = true;
-            const markdownText = markdownInput.value;
+            
+            let markdownText = markdownInput.value;
+            
+            // CORRECCIÓN: Proteger los delimitadores LaTeX de Marked.js
+            // Reemplaza un `\` por `\\` antes de los delimitadores `[]()`
+            // para que Marked.js los ignore y los pase tal cual a KaTeX.
+            markdownText = markdownText.replace(/\\\[/g, '\\\\[');
+            markdownText = markdownText.replace(/\\\]/g, '\\\\]');
+            markdownText = markdownText.replace(/\\\(/g, '\\\\(');
+            markdownText = markdownText.replace(/\\\)/g, '\\\\)');
+
             htmlOutput.innerHTML = marked.parse(markdownText);
             
             // Usamos un try-catch por si KaTeX no se ha cargado aún
@@ -311,11 +313,10 @@ Las fórmulas en línea como $E=mc^2$ se integran perfectamente en el texto.
             saveFile('documento.docx', fileBuffer, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
         });
 
-        // --- Funcionalidad de impresión CORREGIDA ---
+        // --- Funcionalidad de impresión ---
         printBtn.addEventListener('click', () => {
-            // Se clona el contenido para asegurar que todos los estilos se apliquen
             const contentToPrint = htmlOutput.cloneNode(true);
-            printArea.innerHTML = ''; // Limpiar área de impresión
+            printArea.innerHTML = '';
             printArea.appendChild(contentToPrint);
             
             printArea.classList.remove('hidden');
