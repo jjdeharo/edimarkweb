@@ -90,6 +90,18 @@
             <button class="toolbar-btn" data-format="latex-inline" title="Fórmula LaTeX (en línea)"><i data-lucide="sigma"></i></button>
             <button class="toolbar-btn" data-format="latex-block" title="Fórmula LaTeX (bloque)"><i data-lucide="function-square"></i></button>
         </div>
+        <div class="border-l h-6 border-gray-300"></div>
+        <!-- Grupo 5: Pegar (NUEVO) -->
+        <div class="flex items-center gap-1">
+            <button class="toolbar-btn flex items-center gap-1" id="paste-md-btn" title="Pegar Markdown">
+                <i data-lucide="clipboard-paste"></i>
+                <span>MD</span>
+            </button>
+            <button class="toolbar-btn flex items-center gap-1" id="paste-html-btn" title="Pegar HTML">
+                <i data-lucide="clipboard-paste"></i>
+                <span>HTML</span>
+            </button>
+        </div>
     </div>
 
     <!-- Paneles del editor -->
@@ -326,6 +338,8 @@ c & d
             const saveModalOverlay = document.getElementById('save-modal-overlay');
             const confirmSaveBtn = document.getElementById('confirm-save-btn');
             const cancelSaveBtn = document.getElementById('cancel-save-btn');
+            const pasteMdBtn = document.getElementById('paste-md-btn');
+            const pasteHtmlBtn = document.getElementById('paste-html-btn');
 
             // Inicialización de librerías
             if (window.TurndownService) {
@@ -406,6 +420,28 @@ c & d
                 printArea.classList.remove('hidden');
                 window.print();
                 printArea.classList.add('hidden');
+            });
+
+            pasteMdBtn.addEventListener('click', async () => {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    markdownInput.value = text;
+                    updateHtml();
+                } catch (err) {
+                    console.error('Fallo al leer el portapapeles: ', err);
+                    alert('No se pudo pegar el contenido. Asegúrate de haber concedido el permiso.');
+                }
+            });
+
+            pasteHtmlBtn.addEventListener('click', async () => {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    htmlOutput.innerHTML = text;
+                    updateMarkdown();
+                } catch (err) {
+                    console.error('Fallo al leer el portapapeles: ', err);
+                    alert('No se pudo pegar el contenido. Asegúrate de haber concedido el permiso.');
+                }
             });
 
             // Carga final
