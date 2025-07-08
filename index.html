@@ -12,7 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/turndown/7.1.1/turndown.min.js" defer></script>
 
-    <!-- KaTeX para renderizar fórmulas LaTeX (integrity corregido) -->
+    <!-- KaTeX para fórmulas LaTeX (integrity corregido) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0KOVEMVIhbGKLCePo231CVQSHcLesaPSub69DVZXucRepAS5rPjer" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" xintegrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" defer></script>
@@ -20,51 +20,65 @@
     <!-- Lucide Icons -->
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.523.0/dist/umd/lucide.min.js" defer></script>
 
+    <!-- Highlight.js para resaltado de código -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" defer></script>
+
+    <!-- Mermaid.js para diagramas y su extensión para Marked.js (NUEVO) -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked-mermaid/dist/marked-mermaid.min.js" defer></script>
+
+    <!-- Reveal.js para modo presentación -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/theme/black.min.css" id="reveal-theme">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.js"></script>
+
     <style>
-        /* Estilos personalizados sin @apply */
-        body { font-family: 'Inter', sans-serif; background-color: #f0f2f5; }
+        /* Estilos personalizados */
+        :root {
+            --bg-light: #f0f2f5; --text-light: #111827; --card-bg-light: #ffffff; --border-light: #d1d5db;
+            --bg-dark: #1f2937; --text-dark: #d1d5db; --card-bg-dark: #374151; --border-dark: #4b5563;
+        }
+        .dark {
+            --bg: var(--bg-dark); --text: var(--text-dark); --card-bg: var(--card-bg-dark); --border: var(--border-dark);
+        }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg, var(--bg-light));
+            color: var(--text, var(--text-light));
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .prose { color: inherit; }
+        .dark .prose { --tw-prose-body: var(--text-dark); --tw-prose-headings: #ffffff; --tw-prose-links: #93c5fd; --tw-prose-bold: #ffffff; --tw-prose-code: #f97316; --tw-prose-quotes: #d1d5db; --tw-prose-quote-borders: #6b7280; --tw-prose-hr: var(--border-dark); }
+        .card { background-color: var(--card-bg, var(--card-bg-light)); border-color: var(--border, var(--border-light)); transition: background-color 0.3s, border-color 0.3s; }
         .editor-pane {
-            height: calc(100vh - 12rem); /* Altura ajustada */
-            border: 1px solid #d1d5db; border-radius: 0.5rem;
-            padding: 1rem; overflow-y: auto; background-color: #ffffff; transition: box-shadow 0.2s;
+            height: calc(100vh - 14.5rem); border: 1px solid var(--border, var(--border-light)); border-radius: 0.5rem;
+            padding: 1rem; overflow-y: auto; background-color: var(--card-bg, var(--card-bg-light));
         }
-        .editor-pane:focus { outline: none; box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5); }
-        #markdown-input, #html-source-view { font-family: 'Fira Code', 'Courier New', monospace; font-size: 14px; line-height: 1.6; }
-        #html-output { font-family: 'Inter', sans-serif; }
-        .toolbar-btn, .copy-btn {
-            padding: 0.5rem; border-radius: 0.375rem; color: #4b5563;
-            transition: background-color 0.2s, color 0.2s;
-        }
-        .toolbar-btn:hover, .copy-btn:hover { background-color: #e5e7eb; color: #111827; }
-        .file-btn {
-            padding: 0.5rem 1rem; border-radius: 0.375rem; font-size: 0.875rem;
-            font-weight: 500; display: flex; align-items: center; gap: 0.5rem;
-            transition: background-color 0.2s;
-        }
+        .toolbar-btn, .copy-btn { color: var(--text, var(--text-light)); padding: 0.5rem; border-radius: 0.375rem; transition: background-color 0.2s; }
+        .toolbar-btn:hover, .copy-btn:hover { background-color: var(--bg, var(--bg-light)); }
+        .file-btn { padding: 0.5rem 1rem; border-radius: 0.375rem; font-size: 0.875rem; font-weight: 500; display: flex; align-items: center; gap: 0.5rem; transition: background-color 0.2s; }
         
-        /* Estilos para la impresión */
-        @media print {
-            body * { visibility: hidden; }
-            #print-area, #print-area * { visibility: visible; }
-            #print-area { position: absolute; left: 0; top: 0; width: 100%; }
-        }
+        #presentation-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 100; }
+        #close-presentation-btn { position: fixed; top: 20px; right: 20px; z-index: 110; }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
     <header class="flex flex-wrap justify-between items-center mb-4">
-        <h1 class="text-2xl font-bold text-gray-800">EdiMarkWeb: Editor Markdown &harr; HTML</h1>
+        <h1 class="text-2xl font-bold">EdiMarkWeb: Editor Markdown &harr; HTML</h1>
         <div class="flex items-center gap-2 mt-2 sm:mt-0 flex-wrap">
+            <button id="theme-toggle-btn" class="file-btn bg-gray-500 text-white hover:bg-gray-600"><i data-lucide="sun"></i></button>
+            <button id="presentation-btn" class="file-btn bg-purple-500 text-white hover:bg-purple-600"><i data-lucide="presentation"></i> Presentación</button>
             <button id="open-file-btn" class="file-btn bg-blue-500 text-white hover:bg-blue-600"><i data-lucide="folder-open"></i> Abrir</button>
-            <input type="file" id="file-input" class="hidden" accept=".md,.txt,.html">
             <button id="save-btn" class="file-btn bg-green-500 text-white hover:bg-green-600"><i data-lucide="save"></i> Guardar</button>
             <button id="print-btn" class="file-btn bg-gray-600 text-white hover:bg-gray-700"><i data-lucide="printer"></i> Imprimir</button>
+            <button id="clear-all-btn" class="file-btn bg-red-500 text-white hover:bg-red-600"><i data-lucide="trash-2"></i> Borrar todo</button>
         </div>
     </header>
 
     <!-- Barra de herramientas de formato -->
-    <div id="toolbar" class="bg-white p-2 rounded-lg shadow-md mb-4 flex flex-wrap items-center gap-2 border">
-        <!-- Grupo 1: Formato básico -->
+    <div id="toolbar" class="card p-2 rounded-lg shadow-md mb-4 flex flex-wrap items-center gap-2 border">
         <div class="flex items-center gap-1">
             <button class="toolbar-btn" data-format="bold" title="Negrita"><i data-lucide="bold"></i></button>
             <button class="toolbar-btn" data-format="italic" title="Cursiva"><i data-lucide="italic"></i></button>
@@ -79,14 +93,12 @@
             </div>
         </div>
         <div class="border-l h-6 border-gray-300"></div>
-        <!-- Grupo 2: Bloques -->
         <div class="flex items-center gap-1">
             <button class="toolbar-btn" data-format="quote" title="Cita"><i data-lucide="quote"></i></button>
             <button class="toolbar-btn" data-format="list-ul" title="Lista"><i data-lucide="list"></i></button>
             <button class="toolbar-btn" data-format="list-ol" title="Lista numerada"><i data-lucide="list-ordered"></i></button>
         </div>
         <div class="border-l h-6 border-gray-300"></div>
-        <!-- Grupo 3: Inserciones -->
         <div class="flex items-center gap-1">
             <button class="toolbar-btn" data-format="code" title="Código"><i data-lucide="code-2"></i></button>
             <button class="toolbar-btn" data-format="link" title="Enlace"><i data-lucide="link"></i></button>
@@ -94,16 +106,13 @@
             <button class="toolbar-btn" data-format="table" title="Tabla"><i data-lucide="table"></i></button>
         </div>
         <div class="border-l h-6 border-gray-300"></div>
-        <!-- Grupo 4: LaTeX -->
         <div class="flex items-center gap-1">
             <button class="toolbar-btn" data-format="latex-inline" title="Fórmula LaTeX (en línea)"><i data-lucide="sigma"></i></button>
             <button class="toolbar-btn" data-format="latex-block" title="Fórmula LaTeX (bloque)"><i data-lucide="function-square"></i></button>
         </div>
         <div class="border-l h-6 border-gray-300"></div>
-        <!-- Grupo 5: Pegar -->
         <div class="flex items-center gap-1">
-            <button class="toolbar-btn flex items-center gap-1" id="paste-md-btn" title="Pegar Markdown"><i data-lucide="clipboard-paste"></i><span>MD</span></button>
-            <button class="toolbar-btn flex items-center gap-1" id="paste-html-btn" title="Pegar HTML"><i data-lucide="clipboard-paste"></i><span>HTML</span></button>
+             <button class="toolbar-btn" data-format="mermaid" title="Insertar Diagrama"><i data-lucide="git-fork"></i></button>
         </div>
     </div>
 
@@ -111,40 +120,68 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
             <div class="flex justify-between items-center mb-2">
-                <h2 class="text-lg font-semibold text-gray-700">Markdown</h2>
+                <h2 class="text-lg font-semibold">Markdown</h2>
                 <button id="copy-md-btn" class="copy-btn" title="Copiar Markdown"><i data-lucide="copy"></i></button>
             </div>
             <textarea id="markdown-input" class="editor-pane w-full"></textarea>
+            <div id="counter" class="text-sm text-right mt-1 pr-2">0 palabras / 0 caracteres</div>
         </div>
         <div>
-            <!-- Cabecera del panel derecho con interruptor de vista (NUEVO) -->
             <div class="flex justify-between items-center mb-2">
-                <h2 id="html-panel-title" class="text-lg font-semibold text-gray-700">Previsualización</h2>
+                <h2 id="html-panel-title" class="text-lg font-semibold">Previsualización</h2>
                 <div class="flex items-center gap-2">
-                    <button id="view-toggle-btn" class="toolbar-btn" title="Cambiar a vista de código">
-                        <i data-lucide="code-2"></i>
-                    </button>
+                    <button id="view-toggle-btn" class="toolbar-btn" title="Cambiar a vista de código"><i data-lucide="code-2"></i></button>
                     <button id="copy-html-btn" class="copy-btn" title="Copiar HTML"><i data-lucide="copy"></i></button>
                 </div>
             </div>
-            <div id="html-output" contenteditable="true" class="editor-pane w-full prose max-w-none"></div>
+            <div id="html-output" class="editor-pane w-full prose dark:prose-invert max-w-none"></div>
             <textarea id="html-source-view" class="editor-pane w-full hidden"></textarea>
         </div>
     </div>
 
-    <!-- Contenedor para impresión -->
-    <div id="print-area" class="hidden prose max-w-none"></div>
+    <!-- Contenedor para el modo presentación -->
+    <div id="presentation-container" class="hidden">
+        <div class="reveal">
+            <div class="slides"></div>
+        </div>
+        <button id="close-presentation-btn" class="file-btn bg-red-500 text-white"><i data-lucide="x"></i></button>
+    </div>
 
     <!-- Modales -->
     <div id="table-modal-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">...</div>
     <div id="save-modal-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">...</div>
 
     <script>
-        // Declaración de variables globales
         let turndownService;
         let isUpdating = false;
+        let revealInstance;
 
-        const initialContent = `# ¡Bienvenido a EdiMarkWeb! ...`;
+        const initialContent = `# ¡Bienvenido a EdiMarkWeb!
+
+Este es un editor **versátil**. Escribe en *Markdown* y observa la magia.
+
+## ¿Qué puedes hacer?
+
+1.  **Escribir fórmulas**: Ideal para matemáticas.
+    \\[
+    x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}
+    \\]
+2.  **Crear diagramas**: Perfecto para tus clases de biología.
+    \`\`\`mermaid
+    graph TD
+        A[Célula] -->|Nutrientes| B(Metabolismo);
+        B --> C{Energía};
+    \`\`\`
+3.  **Mostrar código**: Útil para digitalización.
+    \`\`\`python
+    def saludar():
+        print("¡Hola, mundo!")
+    \`\`\`
+
+---
+
+¡Y cuando termines, pulsa el botón de **Presentación** para ver tus notas como diapositivas!
+`;
 
         // --- Funciones principales ---
         function updateHtml() {
@@ -155,110 +192,147 @@
             const htmlSourceView = document.getElementById('html-source-view');
 
             let markdownText = markdownInput.value;
-            markdownText = markdownText.replace(/\\\\/g, '\\\\\\\\');
-            markdownText = markdownText.replace(/\\\[/g, '\\\\[').replace(/\\\]/g, '\\\\]');
-            markdownText = markdownText.replace(/\\\(/g, '\\\\(').replace(/\\\)/g, '\\\\)');
             
             if (window.marked) {
-                const rawHtml = marked.parse(markdownText);
-                htmlOutput.innerHTML = rawHtml;
-                htmlSourceView.value = rawHtml;
+                htmlOutput.innerHTML = marked.parse(markdownText);
+                htmlSourceView.value = htmlOutput.innerHTML;
             }
 
+            // Renderizar LaTeX
             try {
-                if (window.renderMathInElement) {
-                    renderMathInElement(htmlOutput, {
-                        delimiters: [
-                            {left: '$$', right: '$$', display: true}, {left: '\\[', right: '\\]', display: true},
-                            {left: '$', right: '$', display: false}, {left: '\\(', right: '\\)', display: false}
-                        ], throwOnError: false
-                    });
+                if (window.renderMathInElement) { renderMathInElement(htmlOutput, { delimiters: [ {left: '$$', right: '$$', display: true}, {left: '\\[', right: '\\]', display: true}, {left: '$', right: '$', display: false}, {left: '\\(', right: '\\)', display: false} ], throwOnError: false }); }
+            } catch (e) { console.warn("KaTeX no está listo."); }
+
+            // Resaltar código
+            try {
+                if (window.hljs) { document.querySelectorAll('pre code:not(.mermaid)').forEach((block) => { hljs.highlightElement(block); }); }
+            } catch (e) { console.warn("Highlight.js no está listo."); }
+            
+            // Renderizar diagramas Mermaid
+            try {
+                if(window.mermaid) {
+                    mermaid.run();
                 }
-            } catch (error) { console.warn("KaTeX no está listo.", error); }
+            } catch(e) { console.warn("Mermaid no está listo."); }
+
+            updateCounter();
             isUpdating = false;
         }
 
-        function updateMarkdown() {
-            if (isUpdating) return;
-            isUpdating = true;
+        function updateCounter() {
             const markdownInput = document.getElementById('markdown-input');
-            const htmlOutput = document.getElementById('html-output');
-            if (turndownService) {
-                markdownInput.value = turndownService.turndown(htmlOutput.innerHTML);
-            }
-            isUpdating = false;
+            const counter = document.getElementById('counter');
+            const text = markdownInput.value;
+            const words = text.match(/\b\w+\b/g) || [];
+            counter.textContent = `${words.length} palabras / ${text.length} caracteres`;
         }
-
+        
         function applyFormat(format) {
-            // ... (código sin cambios)
+            const markdownInput = document.getElementById('markdown-input');
+            const start = markdownInput.selectionStart;
+            const end = markdownInput.selectionEnd;
+            const selectedText = markdownInput.value.substring(start, end);
+            let newText = '';
+
+            switch (format) {
+                case 'bold': newText = `**${selectedText || 'texto en negrita'}**`; break;
+                case 'italic': newText = `*${selectedText || 'texto en cursiva'}*`; break;
+                case 'heading-1': newText = `\n# ${selectedText || 'Título 1'}\n`; break;
+                case 'heading-2': newText = `\n## ${selectedText || 'Título 2'}\n`; break;
+                case 'heading-3': newText = `\n### ${selectedText || 'Título 3'}\n`; break;
+                case 'heading-4': newText = `\n#### ${selectedText || 'Título 4'}\n`; break;
+                case 'quote': newText = `\n> ${selectedText || 'Cita'}\n`; break;
+                case 'list-ul': newText = `\n- ${selectedText || 'Elemento 1'}\n- Elemento 2`; break;
+                case 'list-ol': newText = `\n1. ${selectedText || 'Elemento 1'}\n2. Elemento 2`; break;
+                case 'code': newText = `\`${selectedText || 'código'}\``; break;
+                case 'link': newText = `[${selectedText || 'texto del enlace'}](https://www.ejemplo.com)`; break;
+                case 'image': newText = `![${selectedText || 'texto alternativo'}](https://via.placeholder.com/150)`; break;
+                case 'table': document.getElementById('table-modal-overlay').style.display = 'flex'; return;
+                case 'latex-inline': newText = `$${selectedText || 'E=mc^2'}$`; break;
+                case 'latex-block': newText = `\n\\[\n${selectedText || 'f(x) = x^2'}\n\\]\n`; break;
+                case 'mermaid': newText = '\n```mermaid\ngraph TD;\n    A-->B;\n```\n'; break;
+            }
+            
+            markdownInput.setRangeText(newText, start, end, 'end');
+            markdownInput.focus();
+            updateHtml();
         }
-
-        function toggleTableModal(show) { /* ... */ }
-        function toggleSaveModal(show) { /* ... */ }
-        function saveFile(filename, content, type) { /* ... */ }
-        function copyToClipboard(text, btn) { /* ... */ }
-
+        
         // Carga inicial
         window.onload = () => {
-            // Inicialización de elementos del DOM
+            // ... (inicialización de elementos del DOM)
+            const themeToggleBtn = document.getElementById('theme-toggle-btn');
+            const presentationBtn = document.getElementById('presentation-btn');
+            const closePresentationBtn = document.getElementById('close-presentation-btn');
+            const presentationContainer = document.getElementById('presentation-container');
             const markdownInput = document.getElementById('markdown-input');
-            const htmlOutput = document.getElementById('html-output');
-            const htmlSourceView = document.getElementById('html-source-view');
-            const viewToggleBtn = document.getElementById('view-toggle-btn');
-            const htmlPanelTitle = document.getElementById('html-panel-title');
-            // ... (resto de elementos del DOM)
 
-            // Inicialización de librerías
-            if (window.TurndownService) {
-                turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
+            // Configuración de Marked para Mermaid (CORREGIDO Y MEJORADO)
+            if (window.marked && window.markedMermaid) {
+                marked.use(markedMermaid.mermaid());
             }
 
-            // Asignación de eventos
-            markdownInput.addEventListener('input', updateHtml);
-            htmlOutput.addEventListener('input', updateMarkdown);
-            htmlSourceView.addEventListener('input', () => {
-                if (isUpdating) return;
-                isUpdating = true;
-                htmlOutput.innerHTML = htmlSourceView.value;
-                updateMarkdown();
-                isUpdating = false;
-            });
+            // Inicialización de librerías
+            if (window.TurndownService) { turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' }); }
+            if (window.mermaid) { mermaid.initialize({ startOnLoad: false, theme: 'default' }); }
 
-            // Evento del interruptor de vista (NUEVO)
-            viewToggleBtn.addEventListener('click', () => {
-                const isPreviewVisible = !htmlOutput.classList.contains('hidden');
-                htmlOutput.classList.toggle('hidden');
-                htmlSourceView.classList.toggle('hidden');
-
-                if (isPreviewVisible) {
-                    // Cambiando a vista de código
-                    htmlPanelTitle.textContent = 'Código HTML';
-                    viewToggleBtn.title = 'Cambiar a previsualización';
-                    viewToggleBtn.innerHTML = '<i data-lucide="eye"></i>';
+            // --- Lógica del tema ---
+            const applyTheme = (theme) => {
+                const icon = theme === 'dark' ? 'sun' : 'moon';
+                themeToggleBtn.innerHTML = `<i data-lucide="${icon}"></i>`;
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
                 } else {
-                    // Cambiando a previsualización
-                    htmlPanelTitle.textContent = 'Previsualización';
-                    viewToggleBtn.title = 'Cambiar a vista de código';
-                    viewToggleBtn.innerHTML = '<i data-lucide="code-2"></i>';
+                    document.documentElement.classList.remove('dark');
                 }
-                if (window.lucide) {
-                    lucide.createIcons();
+                if (window.lucide) { lucide.createIcons(); }
+            };
+
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            applyTheme(savedTheme);
+
+            themeToggleBtn.addEventListener('click', () => {
+                const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                localStorage.setItem('theme', newTheme);
+                applyTheme(newTheme);
+            });
+
+            // --- Lógica del modo presentación ---
+            presentationBtn.addEventListener('click', () => {
+                const slidesContainer = presentationContainer.querySelector('.slides');
+                const markdownText = document.getElementById('markdown-input').value;
+                const slides = markdownText.split(/^\s*---\s*$/m);
+
+                slidesContainer.innerHTML = slides.map(slideContent => 
+                    `<section data-markdown><textarea data-template>${slideContent.trim()}</textarea></section>`
+                ).join('');
+
+                presentationContainer.classList.remove('hidden');
+                
+                if (revealInstance) {
+                    revealInstance.destroy();
+                }
+                revealInstance = new Reveal(presentationContainer.querySelector('.reveal'), {
+                    markdown: {
+                        smartypants: true
+                    },
+                    plugins: [] // No plugins needed for this basic setup
+                });
+                revealInstance.initialize();
+            });
+
+            closePresentationBtn.addEventListener('click', () => {
+                presentationContainer.classList.add('hidden');
+                if (revealInstance) {
+                    revealInstance.destroy();
+                    revealInstance = null;
                 }
             });
 
-            // Evento para enlaces clicables
-            htmlOutput.addEventListener('click', (e) => {
-                const link = e.target.closest('a');
-                if (link && link.href) {
-                    if (!e.ctrlKey && !e.metaKey) {
-                        e.preventDefault();
-                        window.open(link.href, '_blank', 'noopener,noreferrer');
-                    }
-                }
-            });
+            // ... (resto de la lógica de `onload`)
+            markdownInput.addEventListener('input', updateHtml);
             
-            // ... (resto de asignaciones de eventos)
-
             // Carga final
             if (window.lucide) {
                 lucide.createIcons();
