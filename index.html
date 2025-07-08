@@ -41,13 +41,6 @@
             font-weight: 500; display: flex; align-items: center; gap: 0.5rem;
             transition: background-color 0.2s;
         }
-        
-        /* Estilos para la impresión */
-        @media print {
-            body * { visibility: hidden; }
-            #print-area, #print-area * { visibility: visible; }
-            #print-area { position: absolute; left: 0; top: 0; width: 100%; }
-        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -126,9 +119,6 @@
             <textarea id="html-source-view" class="editor-pane w-full hidden"></textarea>
         </div>
     </div>
-
-    <!-- Contenedor para impresión -->
-    <div id="print-area" class="hidden prose max-w-none"></div>
 
     <!-- Modales -->
     <div id="table-modal-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
@@ -514,12 +504,39 @@ Lo que escribas en el panel de **Markdown** se reflejará instantáneamente en l
             
             copyMdBtn.addEventListener('click', () => copyToClipboard(markdownInput.value, copyMdBtn));
             copyHtmlBtn.addEventListener('click', () => copyToClipboard(htmlOutput.innerHTML, copyHtmlBtn));
+            
             printBtn.addEventListener('click', () => {
-                const printArea = document.getElementById('print-area');
-                printArea.innerHTML = htmlOutput.innerHTML;
-                printArea.classList.remove('hidden');
-                window.print();
-                printArea.classList.add('hidden');
+                const printContent = document.getElementById('html-output').innerHTML;
+                const iframe = document.createElement('iframe');
+                iframe.style.position = 'absolute';
+                iframe.style.width = '0';
+                iframe.style.height = '0';
+                iframe.style.border = '0';
+                document.body.appendChild(iframe);
+
+                const doc = iframe.contentWindow.document;
+                doc.open();
+                doc.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Imprimir</title>
+                        <script src="https://cdn.tailwindcss.com?plugins=typography"><\/script>
+                        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+                        <style>body { margin: 1.5rem; -webkit-print-color-adjust: exact; print-color-adjust: exact; }</style>
+                    </head>
+                    <body class="prose max-w-none">
+                        ${printContent}
+                    </body>
+                    </html>
+                `);
+                doc.close();
+
+                setTimeout(() => {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                    document.body.removeChild(iframe);
+                }, 500);
             });
 
             clearAllBtn.addEventListener('click', () => {
