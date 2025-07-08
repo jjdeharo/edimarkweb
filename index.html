@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editor Markdown &harr; HTML con DOCX y LaTeX</title>
 
-    <!-- Tailwind CSS para el diseño -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind CSS con el plugin de Tipografía -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
 
     <!-- Marked.js para convertir Markdown a HTML -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -14,15 +14,13 @@
     <!-- Turndown para convertir HTML a Markdown -->
     <script src="https://unpkg.com/turndown/dist/turndown.js"></script>
 
-    <!-- KaTeX para renderizar fórmulas LaTeX -->
+    <!-- KaTeX para renderizar fórmulas LaTeX (CORREGIDO) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0KOVEMVIhbGKLCePo231CVQSHcLesaPSub69DVZXucRepAS5rPjer" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" xintegrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
     
     <!-- Librerías para DOCX -->
-    <!-- Mammoth.js para importar .docx a HTML -->
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.7.0/mammoth.browser.min.js"></script>
-    <!-- html-to-docx para exportar HTML a .docx -->
     <script src="https://cdn.jsdelivr.net/npm/html-to-docx@1.8.0/dist/html-to-docx.js"></script>
 
     <!-- Lucide Icons para los iconos de la barra de herramientas -->
@@ -36,9 +34,6 @@
         }
         .editor-pane {
             height: calc(100vh - 12rem);
-            font-family: 'Fira Code', 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 1.6;
             border: 1px solid #d1d5db;
             border-radius: 0.5rem;
             padding: 1rem;
@@ -50,6 +45,12 @@
             outline: none;
             box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
         }
+        #markdown-input {
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        /* La clase 'prose' de Tailwind se encargará del estilo del HTML */
         #html-output {
             font-family: 'Inter', sans-serif;
         }
@@ -74,25 +75,7 @@
                 top: 0;
                 width: 100%;
             }
-            .katex {
-                font-size: 1em !important;
-            }
         }
-        /* Estilos para el output HTML (CORREGIDOS) */
-        #html-output h1, #html-output h2, #html-output h3 { @apply border-b pb-2 mb-4 mt-6 font-bold; }
-        #html-output h1 { @apply text-3xl; }
-        #html-output h2 { @apply text-2xl; }
-        #html-output h3 { @apply text-xl; }
-        #html-output p { @apply mb-4; }
-        /* Estilos de lista mejorados */
-        #html-output ul { @apply list-disc list-outside mb-4 pl-6; }
-        #html-output ol { @apply list-decimal list-outside mb-4 pl-6; }
-        #html-output blockquote { @apply border-l-4 border-gray-300 pl-4 italic text-gray-600 my-4; }
-        #html-output code { @apply bg-gray-100 text-red-500 rounded px-1 py-0.5 font-mono text-sm; }
-        #html-output pre > code { @apply block whitespace-pre-wrap p-4 bg-gray-800 text-white rounded-md; }
-        #html-output table { @apply w-full border-collapse mb-4; }
-        #html-output th, #html-output td { @apply border border-gray-300 px-4 py-2; }
-        #html-output th { @apply bg-gray-100 font-bold; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -104,7 +87,6 @@
                 <i data-lucide="folder-open"></i> Abrir
             </button>
             <input type="file" id="file-input" class="hidden" accept=".md,.txt,.html,.docx">
-
             <button id="save-md-btn" class="file-btn bg-green-500 text-white hover:bg-green-600">
                 <i data-lucide="save"></i> Guardar .md
             </button>
@@ -140,11 +122,12 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
             <h2 class="text-lg font-semibold mb-2 text-gray-700">Markdown</h2>
-            <textarea id="markdown-input" class="editor-pane w-full" spellcheck="false"></textarea>
+            <textarea id="markdown-input" class="editor-pane w-full"></textarea>
         </div>
         <div>
             <h2 class="text-lg font-semibold mb-2 text-gray-700">HTML (Previsualización)</h2>
-            <div id="html-output" contenteditable="true" class="editor-pane w-full"></div>
+            <!-- La clase 'prose' se encarga del estilo -->
+            <div id="html-output" contenteditable="true" class="editor-pane w-full prose max-w-none"></div>
         </div>
     </div>
 
@@ -169,24 +152,23 @@
         const turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
         let isUpdating = false;
 
-        // Contenido inicial mejorado para demostrar las correcciones
-        const initialContent = `# Editor Markdown mejorado
+        // Contenido inicial para demostrar las correcciones
+        const initialContent = `# ¡Bienvenido al editor!
 
-¡Hola! He corregido los problemas que mencionaste.
+Ahora los títulos, **negritas**, *cursivas* y otros elementos tienen el estilo correcto.
 
-## Listas
-Ahora las listas se deberían ver perfectamente.
+## Listas funcionales
 - Este es un elemento de una lista no ordenada.
-- Y este es otro.
+- Y este es otro, como puedes ver.
+  - Se pueden anidar listas.
 
 1. Esta es una lista ordenada.
 2. Con su segundo elemento.
 
-## Fórmulas LaTeX complejas
-Para **matrices, sistemas de ecuaciones** y otras fórmulas de varias líneas, te recomiendo usar los delimitadores \`\\[ ... \\]\` en lugar de \`$$ ... $$\`. Es más robusto.
+## Fórmulas LaTeX
+Para **matrices y sistemas de ecuaciones**, usa los delimitadores \`\\[ ... \\]\` para mayor seguridad.
 
-### Ejemplo de Matriz
-Observa cómo se usa la doble barra invertida \`\\\\\` para las nuevas líneas.
+### Matriz
 \\[
 A = \\begin{pmatrix}
 a & b \\\\
@@ -194,16 +176,8 @@ c & d
 \\end{pmatrix}
 \\]
 
-### Ejemplo de Sistema de Ecuaciones
-\\[
-\\begin{cases}
-3x + 5y = 2 \\\\
-5x + 8y = 3
-\\end{cases}
-\\]
-
 ### Fórmula en línea
-Por supuesto, las fórmulas en línea como $E=mc^2$ siguen funcionando igual.
+Las fórmulas en línea como $E=mc^2$ se integran perfectamente en el texto.
 `;
 
         // --- Funciones principales ---
@@ -212,16 +186,21 @@ Por supuesto, las fórmulas en línea como $E=mc^2$ siguen funcionando igual.
             isUpdating = true;
             const markdownText = markdownInput.value;
             htmlOutput.innerHTML = marked.parse(markdownText);
-            // Configuración de KaTeX CORREGIDA
-            renderMathInElement(htmlOutput, {
-                delimiters: [
-                    {left: '$$', right: '$$', display: true},
-                    {left: '\\[', right: '\\]', display: true},
-                    {left: '$', right: '$', display: false},
-                    {left: '\\(', right: '\\)', display: false}
-                ],
-                throwOnError: false
-            });
+            
+            // Usamos un try-catch por si KaTeX no se ha cargado aún
+            try {
+                renderMathInElement(htmlOutput, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '\\[', right: '\\]', display: true},
+                        {left: '$', right: '$', display: false},
+                        {left: '\\(', right: '\\)', display: false}
+                    ],
+                    throwOnError: false
+                });
+            } catch (error) {
+                console.warn("KaTeX no está listo todavía.", error);
+            }
             isUpdating = false;
         }
 
@@ -261,7 +240,7 @@ Por supuesto, las fórmulas en línea como $E=mc^2$ siguen funcionando igual.
                 case 'image': newText = `![${selectedText || 'texto alternativo'}](https://via.placeholder.com/150)`; break;
                 case 'table': newText = `\n| Cabecera 1 | Cabecera 2 |\n|------------|------------|\n| Celda 1    | Celda 2    |\n`; break;
                 case 'latex-inline': newText = `$${selectedText || 'E=mc^2'}$`; break;
-                case 'latex-block': newText = `\n\\[\n${selectedText || 'f(x) = x^2'}\n\\]\n`; break; // Cambiado a \\[ \\]
+                case 'latex-block': newText = `\n\\[\n${selectedText || 'f(x) = x^2'}\n\\]\n`; break;
             }
             markdownInput.setRangeText(newText, start, end, 'select');
             markdownInput.focus();
@@ -292,7 +271,7 @@ Por supuesto, las fórmulas en línea como $E=mc^2$ siguen funcionando igual.
             } else {
                 reader.onload = (e) => {
                     const content = e.target.result;
-                    if (file.type === "text/html") {
+                    if (file.name.endsWith(".html")) {
                         htmlOutput.innerHTML = content;
                         updateMarkdown();
                     } else {
@@ -319,11 +298,11 @@ Por supuesto, las fórmulas en línea como $E=mc^2$ siguen funcionando igual.
 
         saveMdBtn.addEventListener('click', () => saveFile('documento.md', markdownInput.value, 'text/markdown;charset=utf-8'));
         saveHtmlBtn.addEventListener('click', () => {
-            const htmlContent = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Documento</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"><style>body{font-family:sans-serif;line-height:1.6;padding:2em;}</style></head><body>${htmlOutput.innerHTML}</body></html>`;
+            const htmlContent = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Documento</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"><style>body{font-family:sans-serif;line-height:1.6;padding:2em;}.prose{max-width:80ch;}</style></head><body class="prose">${htmlOutput.innerHTML}</body></html>`;
             saveFile('documento.html', htmlContent, 'text/html;charset=utf-8');
         });
         saveDocxBtn.addEventListener('click', async () => {
-            const content = htmlOutput.innerHTML;
+            const content = `<div class="prose">${htmlOutput.innerHTML}</div>`;
             const fileBuffer = await htmlToDocx.asBlob(content, {
                 header: true,
                 footer: true,
@@ -334,11 +313,14 @@ Por supuesto, las fórmulas en línea como $E=mc^2$ siguen funcionando igual.
 
         // --- Funcionalidad de impresión CORREGIDA ---
         printBtn.addEventListener('click', () => {
-            printArea.innerHTML = htmlOutput.innerHTML;
-            printArea.classList.remove('hidden'); // Hacer visible para la impresión
+            // Se clona el contenido para asegurar que todos los estilos se apliquen
+            const contentToPrint = htmlOutput.cloneNode(true);
+            printArea.innerHTML = ''; // Limpiar área de impresión
+            printArea.appendChild(contentToPrint);
+            
+            printArea.classList.remove('hidden');
             window.print();
-            printArea.classList.add('hidden'); // Ocultar de nuevo
-            printArea.innerHTML = '';
+            printArea.classList.add('hidden');
         });
 
         // Carga inicial
