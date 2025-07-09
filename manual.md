@@ -27,22 +27,22 @@ Puedes integrar expresiones matemáticas directamente en tu texto.
 
 ### Fórmulas en línea
 
-Se insertan dentro de un párrafo usando un único símbolo de dólar `$` en cada extremo.
 
--   **Ejemplo**: `$\int_a^b f(x) dx = F(b) - F(a)$` se muestra como $\int_a^b f(x) dx = F(b) - F(a)$.
+
+-   **Ejemplo**: ` \(\int_a^b f(x) dx = F(b) - F(a)\).
 
 ### Fórmulas en bloque
 
-Para ecuaciones más grandes o matrices, usa dobles símbolos de dólar `$$` o corchetes `\[ ... \]`. Se mostrarán en una línea separada y centrada.
+
 
 -   **Ejemplo (ecuación)**:
-    ```latex
+
     \[
     x = \frac{-b \pm \sqrt{b^2-4ac}}{2a}
     \]
-    ```
+
 -   **Ejemplo (matriz)**:
-    ```latex
+
     \[
     A = \begin{pmatrix}
     a_{11} & a_{12} & \cdots & a_{1n} \\
@@ -51,7 +51,6 @@ Para ecuaciones más grandes o matrices, usa dobles símbolos de dólar `$$` o c
     a_{m1} & a_{m2} & \cdots & a_{mn}
     \end{pmatrix}
     \]
-    ```
 
 ---
 
