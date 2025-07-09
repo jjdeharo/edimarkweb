@@ -17,13 +17,6 @@
     <!-- Librerías de Markdown y HTML -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/turndown/7.1.1/turndown.min.js" defer></script>
-
-    <!-- DOCX import / export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.17/mammoth.browser.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.js" defer></script>
-
-    <!-- Conversión de MathML a LaTeX -->
-    <script src="https://cdn.jsdelivr.net/npm/mathml-to-latex@1.0.3/lib/mathml-to-latex.min.js" defer></script>
     
     <!-- KaTeX para renderizar fórmulas LaTeX -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0KOVEMVIhbGKLCePo231CVQSHcLesaPSub69DVZXucRepAS5rPjer" crossorigin="anonymous">
@@ -52,6 +45,11 @@
     <!-- Split.js para paneles redimensionables -->
     <script src="https://cdn.jsdelivr.net/npm/split.js/dist/split.min.js"></script>
 
+    <!-- DOCX → HTML -->
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.4.17/mammoth.browser.min.js" defer></script>
+
+    <!-- HTML → DOCX -->
+    <script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.5.0/dist/html-docx.js" defer></script>
 
     <style>
         /* Estilos personalizados */
@@ -553,15 +551,18 @@
                 const filename = filenameInput.value || 'documento';
                 
                 if (document.getElementById('format-docx').checked) {
-                  const htmlDoc = '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
-                                  '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">' +
-                                  '</head><body>' + htmlOutput.innerHTML + '</body></html>';
+                  // Asegúrate de que la vista previa esté actualizada.
+                  updateHtml();                     
 
-                  const blob = htmlDocx.asBlob(htmlDoc);
+                  const fullHtml =
+                    '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>' +
+                    htmlOutput.innerHTML + '</body></html>';
+
+                  const blob = htmlDocx.asBlob(fullHtml);
                   saveFile(filename + '.docx', blob,
                            'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
                   toggleSaveModal(false);
-                  return;
+                  return; // Evita que caiga en los casos MD/HTML.
                 }
                 
                 if (document.getElementById('format-md').checked) {
@@ -581,49 +582,45 @@
 
             openFileBtn.addEventListener('click', () => fileInput.click());
             
-            fileInput.addEventListener('change', async (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
-
-                if (file.name.endsWith('.docx')) {
-                    if (typeof mammoth === 'undefined' || typeof MathMLToLaTeX === 'undefined') {
-                        console.error("Las librerías para DOCX no están cargadas.");
-                        alert("Error: Las librerías para procesar archivos DOCX no se han cargado correctamente.");
-                        return;
+            fileInput.onchange = async e => {
+              const file = e.target.files[0];
+              
+              if (file && file.name.endsWith('.docx')) {
+                  try {
+                    if (typeof mammoth === 'undefined') {
+                        throw new Error("La librería Mammoth.js no está cargada.");
                     }
-                    try {
-                        const { value: html } = await mammoth.convertToHtml({ arrayBuffer: await file.arrayBuffer() });
+                    const { value: html } = await mammoth.convertToHtml({
+                      arrayBuffer: await file.arrayBuffer()
+                    });
 
-                        // convierte ecuaciones OMML a LaTeX (opcional)
-                        const htmlLatex = html.replace(/<math[\s\S]*?<\/math>/g,
-                          m => '$' + MathMLToLaTeX(m) + '$'
-                        );
-
-                        htmlOutput.innerHTML = htmlLatex;
-                        updateMarkdown();      // tu función que pasa HTML → Markdown
-                        lastSaved = markdownEditor.getValue();
-                    } catch (error) {
-                        console.error('Error al procesar el archivo .docx:', error);
-                        alert('Hubo un error al leer el archivo .docx. Asegúrate de que no esté corrupto.');
-                    }
-                    fileInput.value = '';
-                    return;                // evita que continúe con .md o .html
-                } 
-                
-                // Lógica para .md y .html
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    if (file.name.endsWith(".html")) { 
-                        htmlOutput.innerHTML = e.target.result; 
-                        updateMarkdown(); 
-                    } else { // .md, .markdown, u otros
-                        markdownEditor.setValue(e.target.result); 
-                    }
+                    htmlOutput.innerHTML = html;  // Muestra la conversión.
+                    updateMarkdown();             // Tu función HTML → Markdown.
                     lastSaved = markdownEditor.getValue();
-                };
-                reader.readAsText(file);
-                fileInput.value = '';
-            });
+                  } catch (err) {
+                    console.error('DOCX error', err);
+                    alert('No se pudo leer el archivo Word.');
+                  }
+                  fileInput.value = '';           // Limpia el input.
+                  return;
+              }
+
+              // Lógica para otros formatos (.md, .html).
+              if (file) {
+                  const reader = new FileReader();
+                  reader.onload = (e) => {
+                      if (file.name.endsWith(".html")) { 
+                          htmlOutput.innerHTML = e.target.result; 
+                          updateMarkdown(); 
+                      } else { // .md, .markdown, u otros.
+                          markdownEditor.setValue(e.target.result); 
+                      }
+                      lastSaved = markdownEditor.getValue();
+                  };
+                  reader.readAsText(file);
+                  fileInput.value = '';
+              }
+            };
             
             copyMdBtn.addEventListener('click', () => copyToClipboard(markdownEditor.getValue(), copyMdBtn));
             
