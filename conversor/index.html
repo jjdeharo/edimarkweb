@@ -1,353 +1,284 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conversor de Markdown a ODT</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Librerías necesarias para la conversión -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/14.1.0/markdown-it.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <script>
-        // Configuración de MathJax para convertir LaTeX a MathML
-        window.MathJax = {
-            tex: {
-                inlineMath: [['$', '$'], ['\\(', '\\)']],
-                displayMath: [['$$', '$$'], ['\\[', '\\]']]
-            },
-            svg: {
-                fontCache: 'global'
-            },
-            startup: {
-                // La conversión se hará manualmente, no al cargar la página
-                typeset: false
-            }
-        };
-    </script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
-        .spinner {
-            border-top-color: #3498db;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conversor de markdown a ODT</title>
+  <!-- External libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+  <!-- MathJax with MathML output -->
+  <script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    header {
+      padding: 0.5rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f4f4f4;
+      flex-wrap: wrap;
+    }
+    header h1 {
+      margin: 0.2rem 0;
+      font-size: 1.25rem;
+    }
+    .lang-switch button {
+      margin-left: 0.25rem;
+      border: 1px solid #ccc;
+      background: #fff;
+      padding: 0.25rem 0.5rem;
+      cursor: pointer;
+      border-radius: 0.25rem;
+    }
+    .lang-switch button.active {
+      background: #007bff;
+      color: #fff;
+      font-weight: bold;
+    }
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 1rem;
+    }
+    textarea {
+      width: 100%;
+      min-height: 40vh;
+      resize: vertical;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 0.25rem;
+      margin-bottom: 0.75rem;
+      font-family: Consolas, "Courier New", monospace;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .actions button {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 0.25rem;
+      cursor: pointer;
+      background: #007bff;
+      color: #fff;
+    }
+    .actions button[disabled] {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+    #status {
+      margin-top: 0.5rem;
+      font-style: italic;
+    }
+    footer {
+      text-align: center;
+      padding: 1rem 0.5rem;
+      background: #f4f4f4;
+      font-size: 0.875rem;
+    }
+    footer a {
+      color: inherit;
+      text-decoration: underline;
+    }
+    @media (min-width: 768px) {
+      main {
+        flex-direction: row;
+        gap: 1rem;
+      }
+      textarea {
+        width: 50%;
+      }
+      .right-panel {
+        width: 50%;
+        display: flex;
+        flex-direction: column;
+      }
+    }
+  </style>
 </head>
-<body class="bg-gray-100 text-gray-800 flex items-center justify-center min-h-screen p-4">
-
-    <div class="w-full max-w-5xl bg-white rounded-xl shadow-lg p-6 md:p-8">
-        <div class="text-center mb-6">
-            <h1 class="text-3xl font-bold text-gray-900">Conversor de Markdown a ODT</h1>
-            <p class="text-gray-600 mt-2">Pega tu texto en Markdown. Las fórmulas en LaTeX ($...$ o $$...$$) serán editables en LibreOffice.</p>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Columna de entrada de Markdown -->
-            <div>
-                <label for="markdown-input" class="block text-sm font-medium text-gray-700 mb-2">Entrada de Markdown</label>
-                <textarea id="markdown-input" class="w-full h-96 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150" placeholder="Escribe o pega tu Markdown aquí...
-
-# Ejemplo de Título
-
-Este es un párrafo con texto en **negrita** e *itálica*.
-
-Una fórmula en línea: $E = mc^2$.
-
-Una fórmula en bloque:
-$$
-\int_a^b f(x) \, dx = F(b) - F(a)
-$$
-"></textarea>
-            </div>
-
-            <!-- Columna de previsualización HTML -->
-            <div>
-                <label for="html-preview" class="block text-sm font-medium text-gray-700 mb-2">Previsualización</label>
-                <div id="html-preview" class="w-full h-96 p-4 border border-gray-200 bg-gray-50 rounded-lg overflow-y-auto prose max-w-none">
-                    <p class="text-gray-500">La previsualización aparecerá aquí...</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Botón de conversión y estado -->
-        <div class="mt-6 text-center">
-            <button id="convert-button" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-transform transform hover:scale-105 duration-200">
-                Convertir y Descargar ODT
-            </button>
-            <div id="status" class="mt-4 text-sm text-gray-600 h-5 flex items-center justify-center"></div>
-        </div>
+<body>
+  <header>
+    <h1 id="app-title">Conversor de Markdown a ODT</h1>
+    <div class="lang-switch">
+      <button id="btn-es">ES</button>
+      <button id="btn-ca">CA</button>
     </div>
+  </header>
 
-    <script>
-        // FIX: This function initializes the app. It waits for external libraries to be loaded
-        // using a more robust check before running the main logic.
-        function initializeApp() {
-            if (typeof window.markdownit === 'undefined' ||
-                typeof window.JSZip === 'undefined' ||
-                typeof window.saveAs === 'undefined' ||
-                !window.MathJax?.tex2mmlPromise) {
-                setTimeout(initializeApp, 100); // Poll until all libraries are ready
-                return;
-            }
+  <main>
+    <textarea id="markdown-input" placeholder="# Título\n\nEscribe tu texto en Markdown aquí...\n\nFórmula inline: $E = mc^2$\n\n$$\n\\int_a^b f(x)\,dx\n$$"></textarea>
 
-            // --- Application Logic Starts Here ---
+    <div class="right-panel">
+      <div class="actions">
+        <button id="convert-btn">Convertir</button>
+        <button id="download-btn" disabled>Descargar ODT</button>
+      </div>
+      <p id="status"></p>
+    </div>
+  </main>
 
-            // --- Instancias de Markdown-it (se crean una sola vez) ---
-            // Para la previsualización (sin el plugin de mates, para que MathJax funcione)
-            const mdPreview = window.markdownit();
-            // Para la conversión a ODT (con el plugin de mates para generar los tokens)
-            const mdOdt = window.markdownit();
+  <footer>
+    <div id="footer-lab"><a href="https://labia.tiddlyhost.com" target="_blank" rel="noopener">Laboratorio de aplicaciones educativas</a></div>
+    <div id="footer-made"><a href="https://bilateria.org" target="_blank" rel="noopener">Aplicación hecha por Juan José de Haro</a></div>
+    <div id="footer-license"><a href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" rel="noopener">Esta obra está bajo una licencia Creative Commons BY-SA</a></div>
+  </footer>
 
-            // --- Elementos del DOM ---
-            const markdownInput = document.getElementById('markdown-input');
-            const htmlPreview = document.getElementById('html-preview');
-            const convertButton = document.getElementById('convert-button');
-            const statusDiv = document.getElementById('status');
-            
-            // --- Constantes para el archivo ODT ---
-            const mimetype = 'application/vnd.oasis.opendocument.text';
+  <script>
+    // Simple i18n object
+    const i18n = {
+      es: {
+        title: 'Conversor de Markdown a ODT',
+        placeholder: '# Título\n\nEscribe tu texto en Markdown aquí...',
+        convert: 'Convertir',
+        download: 'Descargar ODT',
+        converting: 'Convirtiendo...',
+        ready: 'Documento listo para descargar',
+        error: 'Error durante la conversión',
+        lab: 'Laboratorio de aplicaciones educativas',
+        made: 'Aplicación hecha por Juan José de Haro',
+        license: 'Esta obra está bajo una licencia Creative Commons BY-SA',
+        licenseLink: 'https://creativecommons.org/licenses/by-sa/4.0/deed.es'
+      },
+      ca: {
+        title: 'Convertidor de Markdown a ODT',
+        placeholder: '# Títol\n\nEscriu el teu text en Markdown aquí...',
+        convert: 'Convertir',
+        download: 'Descarregar ODT',
+        converting: 'Convertint...',
+        ready: 'Document llest per descarregar',
+        error: 'S\'ha produït un error durant la conversió',
+        lab: "Laboratori d'aplicacions educatives",
+        made: 'Aplicació feta per Juan José de Haro',
+        license: 'Aquesta obra està sota una llicència Creative Commons BY-SA',
+        licenseLink: 'https://creativecommons.org/licenses/by-sa/4.0/deed.ca'
+      }
+    };
 
-            const manifest = `<?xml version="1.0" encoding="UTF-8"?>
-<manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0" manifest:version="1.2">
-    <manifest:file-entry manifest:full-path="/" manifest:version="1.2" manifest:media-type="application/vnd.oasis.opendocument.text"/>
-    <manifest:file-entry manifest:full-path="styles.xml" manifest:media-type="text/xml"/>
-    <manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml"/>
-    <manifest:file-entry manifest:full-path="meta.xml" manifest:media-type="text/xml"/>
-    <manifest:file-entry manifest:full-path="settings.xml" manifest:media-type="text/xml"/>
-</manifest:manifest>`;
+    const langButtons = {
+      es: document.getElementById('btn-es'),
+      ca: document.getElementById('btn-ca')
+    };
 
-            const meta = `<?xml version="1.0" encoding="UTF-8"?>
-<office:document-meta xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0" office:version="1.2">
-    <meta:generator>Conversor MD-ODT v1.3</meta:generator>
-</office:document-meta>`;
-            
-            const settings = `<?xml version="1.0" encoding="UTF-8"?>
-<office:document-settings xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" office:version="1.2"></office:document-settings>`;
+    // Detect or load language
+    function getInitialLang() {
+      const stored = localStorage.getItem('lang');
+      if (stored) return stored;
+      const navLang = navigator.language || navigator.userLanguage || 'es';
+      return navLang.toLowerCase().startsWith('ca') ? 'ca' : 'es';
+    }
 
-            const styles = `<?xml version="1.0" encoding="UTF-8"?>
-<office:document-styles xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0" office:version="1.2">
-    <office:styles>
-        <style:style style:name="Standard" style:family="paragraph"/>
-        <style:style style:name="Heading_20_1" style:family="paragraph" style:parent-style-name="Standard">
-            <style:text-properties style:font-name="Liberation Sans" style:font-family-generic="swiss" style:font-pitch="variable" office:display-name="Heading 1"/>
-        </style:style>
-        <style:style style:name="Heading_20_2" style:family="paragraph" style:parent-style-name="Standard">
-            <style:text-properties style:font-name="Liberation Sans" style:font-family-generic="swiss" style:font-pitch="variable" office:display-name="Heading 2"/>
-        </style:style>
-        <style:style style:name="Text_20_body" style:family="paragraph" style:parent-style-name="Standard">
-            <style:paragraph-properties style:font-name="Liberation Serif" style:font-family-generic="roman" style:font-pitch="variable"/>
-        </style:style>
-        <style:style style:name="T1" style:family="text">
-            <style:text-properties style:font-weight="bold"/>
-        </style:style>
-        <style:style style:name="T2" style:family="text">
-            <style:text-properties style:font-style="italic"/>
-        </style:style>
-    </office:styles>
-</office:document-styles>`;
-            
-            // --- Plugin de Markdown-it para reconocer la sintaxis de LaTeX ---
-            function markdownitMath(md) {
-                const inlineRule = (state, silent) => {
-                    let match = state.src.slice(state.pos).match(/^\$((?:\\\$|[^$])+)\$/);
-                    if (!match) return false;
-                    if (!silent) {
-                        let token = state.push('math_inline', 'math', 0);
-                        token.content = match[1].trim();
-                    }
-                    state.pos += match[0].length;
-                    return true;
-                };
+    let currentLang = getInitialLang();
 
-                const blockRule = (state, startLine, endLine, silent) => {
-                    let startPos = state.bMarks[startLine] + state.tShift[startLine];
-                    let maxPos = state.eMarks[startLine];
-                    if (state.src.slice(startPos, maxPos).trim() !== '$$') return false;
+    function applyLang(lang) {
+      currentLang = lang;
+      localStorage.setItem('lang', lang);
+      document.documentElement.lang = lang;
 
-                    let nextLine = startLine;
-                    let content = '';
-                    let found = false;
-                    while(nextLine < endLine) {
-                        nextLine++;
-                        if (nextLine >= endLine) break;
+      // Texts
+      document.getElementById('app-title').textContent = i18n[lang].title;
+      document.getElementById('markdown-input').placeholder = i18n[lang].placeholder;
+      document.getElementById('convert-btn').textContent = i18n[lang].convert;
+      document.getElementById('download-btn').textContent = i18n[lang].download;
 
-                        startPos = state.bMarks[nextLine] + state.tShift[nextLine];
-                        maxPos = state.eMarks[nextLine];
-                        let line = state.src.slice(startPos, maxPos).trim();
-                        
-                        if (line === '$$') {
-                            found = true;
-                            break;
-                        }
-                        content += state.src.slice(startPos, maxPos) + '\n';
-                    }
+      // Footer
+      document.getElementById('footer-lab').innerHTML = `<a href="https://labia.tiddlyhost.com" target="_blank" rel="noopener">${i18n[lang].lab}</a>`;
+      document.getElementById('footer-made').innerHTML = `<a href="https://bilateria.org" target="_blank" rel="noopener">${i18n[lang].made}</a>`;
+      document.getElementById('footer-license').innerHTML = `<a href="${i18n[lang].licenseLink}" target="_blank" rel="noopener">${i18n[lang].license}</a>`;
 
-                    if (!found) return false;
+      // Active button styles
+      Object.keys(langButtons).forEach(key => {
+        langButtons[key].classList.toggle('active', key === lang);
+      });
+    }
 
-                    state.line = nextLine + 1;
-                    let token = state.push('math_block', 'math', 0);
-                    token.content = content.trim();
-                    return true;
-                };
+    // Attach language button events
+    Object.keys(langButtons).forEach(key => {
+      langButtons[key].addEventListener('click', () => applyLang(key));
+    });
 
-                md.inline.ruler.before('escape', 'math_inline', inlineRule);
-                md.block.ruler.before('fence', 'math_block', blockRule);
-            }
-            mdOdt.use(markdownitMath); // Aplicar el plugin solo a la instancia para ODT
+    applyLang(currentLang);
 
-            // --- Lógica de la aplicación ---
-            async function generateContentXml(markdownText) {
-                const tokens = mdOdt.parse(markdownText, {});
-                let xml = '';
-                let inParagraph = false;
-                let mathCounter = 0;
+    // Markdown converter
+    const md = window.markdownit({
+      html: false,
+      breaks: true,
+      linkify: true
+    });
 
-                const escapeXml = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // Main conversion function
+    async function convertMarkdownToODT() {
+      const input = document.getElementById('markdown-input').value;
+      const status = document.getElementById('status');
+      const downloadBtn = document.getElementById('download-btn');
 
-                const closeParagraph = () => {
-                    if (inParagraph) {
-                        xml += '</text:p>';
-                        inParagraph = false;
-                    }
-                };
+      status.textContent = i18n[currentLang].converting;
+      downloadBtn.disabled = true;
 
-                for (const token of tokens) {
-                    switch (token.type) {
-                        case 'heading_open':
-                            closeParagraph();
-                            const level = token.tag.substring(1);
-                            xml += `<text:h text:style-name="Heading_20_${level}" text:outline-level="${level}">`;
-                            break;
-                        case 'heading_close':
-                            xml += '</text:h>';
-                            break;
-                        case 'paragraph_open':
-                            closeParagraph();
-                            xml += '<text:p text:style-name="Text_20_body">';
-                            inParagraph = true;
-                            break;
-                        case 'paragraph_close':
-                            closeParagraph();
-                            break;
-                        case 'inline':
-                            if (!inParagraph) {
-                                xml += '<text:p text:style-name="Text_20_body">';
-                                inParagraph = true;
-                            }
-                            for (const child of token.children) {
-                                switch (child.type) {
-                                    case 'text':
-                                        xml += escapeXml(child.content);
-                                        break;
-                                    case 'strong_open':
-                                        xml += '<text:span text:style-name="T1">';
-                                        break;
-                                    case 'strong_close':
-                                        xml += '</text:span>';
-                                        break;
-                                    case 'em_open':
-                                        xml += '<text:span text:style-name="T2">';
-                                        break;
-                                    case 'em_close':
-                                        xml += '</text:span>';
-                                        break;
-                                    case 'math_inline':
-                                    case 'math_block':
-                                        // FIX: MathJax.tex2mmlPromise devuelve directamente la cadena
-                                        const mathmlString = await MathJax.tex2mmlPromise(child.content);
-                                        
-                                        xml += `<draw:frame draw:style-name="fr1" draw:name="Object${++mathCounter}" text:anchor-type="as-char" svg:width="2.169cm" svg:height="0.719cm" draw:z-index="0">
-                                                    <draw:object draw:mime-type="application/vnd.oasis.opendocument.formula" loext:mime-type="application/vnd.oasis.opendocument.formula">
-                                                        ${mathmlString}
-                                                    </draw:object>
-                                                </draw:frame>`;
-                                        if (child.type === 'math_block') {
-                                            closeParagraph();
-                                            xml += '<text:p text:style-name="Text_20_body">';
-                                            inParagraph = true;
-                                        }
-                                        break;
-                                }
-                            }
-                            break;
-                    }
-                }
-                closeParagraph();
+      try {
+        // Replace formulas with MathML
+        const formulaRegex = /\$\$([\s\S]+?)\$\$|\$([^$]+?)\$/g; // Captures block and inline
+        let withMathML = input.replace(formulaRegex, (match, p1, p2) => {
+          const tex = p1 || p2;
+          try {
+            return MathJax.tex2mml(tex);
+          } catch (err) {
+            console.error('MathJax conversion error', err);
+            return tex; // Fallback to raw TeX
+          }
+        });
 
-                return `<?xml version="1.0" encoding="UTF-8"?>
-<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0" xmlns:math="http://www.w3.org/1998/Math/MathML" xmlns:loext="urn:org:documentfoundation:names:experimental:office:xmlns:loext:1.0" office:version="1.2">
-    <office:body>
-        <office:text>
-            ${xml}
-        </office:text>
-    </office:body>
-</office:document-content>`;
-            }
-            
-            function updatePreview() {
-                const markdownText = markdownInput.value;
-                // FIX: Usar la instancia sin el plugin de mates para mantener los delimitadores '$'
-                htmlPreview.innerHTML = mdPreview.render(markdownText);
-                // Pedir a MathJax que renderice las fórmulas en la previsualización
-                if (window.MathJax) {
-                    MathJax.typesetPromise([htmlPreview]);
-                }
-            }
+        // Convert markdown (with embedded MathML) to HTML
+        const html = md.render(withMathML);
 
-            convertButton.addEventListener('click', async () => {
-                const markdownText = markdownInput.value;
-                if (!markdownText.trim()) {
-                    statusDiv.textContent = "El campo de Markdown está vacío.";
-                    return;
-                }
+        // Very naive HTML -> ODT content.xml mapping
+        const bodyLines = html
+          .replace(/<\/p>/g, '')
+          .split(/<p[^>]*>/g)
+          .filter(Boolean)
+          .map(line => `<text:p>${line}</text:p>`) // wrap each paragraph
+          .join('\n');
 
-                statusDiv.innerHTML = '<div class="spinner w-5 h-5 border-4 border-gray-200 rounded-full"></div><span class="ml-2">Generando archivo ODT...</span>';
-                convertButton.disabled = true;
+        const contentXml = `<?xml version="1.0" encoding="UTF-8"?>\n` +
+`<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"\n  xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"\n  xmlns:math="http://www.w3.org/1998/Math/MathML"\n  office:version="1.3">\n  <office:body>\n    <office:text>${bodyLines}</office:text>\n  </office:body>\n</office:document-content>`;
 
-                try {
-                    const contentXml = await generateContentXml(markdownText);
-                    
-                    const zip = new JSZip();
-                    zip.file("mimetype", mimetype, {compression: "STORE"});
-                    zip.file("content.xml", contentXml);
-                    zip.file("styles.xml", styles);
-                    zip.file("meta.xml", meta);
-                    zip.file("settings.xml", settings);
-                    zip.folder("META-INF").file("manifest.xml", manifest);
+        const manifestXml = `<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n` +
+`<manifest:manifest xmlns:manifest=\"urn:oasis:names:tc:opendocument:xmlns:manifest:1.0\">\n  <manifest:file-entry manifest:media-type=\"application/vnd.oasis.opendocument.text\" manifest:full-path=\"/\"/>\n  <manifest:file-entry manifest:media-type=\"text/xml\" manifest:full-path=\"content.xml\"/>\n</manifest:manifest>`;
 
-                    const blob = await zip.generateAsync({
-                        type: "blob",
-                        mimeType: mimetype
-                    });
+        // Build ODT package
+        const zip = new JSZip();
+        zip.file('mimetype', 'application/vnd.oasis.opendocument.text', { compression: 'STORE' });
+        zip.file('content.xml', contentXml);
+        zip.folder('META-INF').file('manifest.xml', manifestXml);
 
-                    saveAs(blob, "documento.odt");
-                    
-                    statusDiv.textContent = "✅ ¡Archivo generado con éxito!";
+        const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.oasis.opendocument.text' });
 
-                } catch (error) {
-                    console.error("Error durante la conversión:", error);
-                    statusDiv.textContent = "❌ Error al generar el archivo. Revisa la consola para más detalles.";
-                } finally {
-                    convertButton.disabled = false;
-                    setTimeout(() => { if(statusDiv.textContent.includes("éxito")) statusDiv.innerHTML = ''; }, 5000);
-                }
-            });
-            
-            markdownInput.addEventListener('input', updatePreview);
-            
-            // Cargar ejemplo inicial en la previsualización
-            updatePreview();
-        }
+        // Save blob reference for download
+        downloadBtn.blob = blob;
+        downloadBtn.disabled = false;
+        status.textContent = i18n[currentLang].ready;
+      } catch (e) {
+        console.error(e);
+        status.textContent = i18n[currentLang].error;
+      }
+    }
 
-        // Iniciar la aplicación una vez que la página se ha cargado completamente.
-        window.onload = initializeApp;
-    </script>
+    document.getElementById('convert-btn').addEventListener('click', convertMarkdownToODT);
+
+    document.getElementById('download-btn').addEventListener('click', function () {
+      if (this.blob) {
+        saveAs(this.blob, 'document.odt');
+      }
+    });
+  </script>
 </body>
 </html>
