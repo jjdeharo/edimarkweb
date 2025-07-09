@@ -232,34 +232,6 @@
         const AUTOSAVE_KEY = 'edimarkweb-autosave';
         let lastSaved = '';
 
-        const initialContent = `# Manual rápido de EdiMarkWeb
-
-¡Bienvenido/a a EdiMarkWeb! Esta es una guía rápida para que aproveches al máximo el editor.
-
-## Barra de herramientas
-
-La barra de herramientas superior te permite aplicar formato a tu texto de forma rápida. Simplemente selecciona el texto que quieres formatear (o coloca el cursor donde quieras insertar el elemento) y haz clic en el botón correspondiente.
-
-- **Negrita** y *cursiva*.
-- Títulos de varios niveles.
-- Citas, listas y código.
-- Enlaces e imágenes.
-- Tablas (se abrirá un diálogo para configurarlas).
-
-## Soporte para LaTeX
-
-Puedes escribir fórmulas matemáticas complejas usando la sintaxis de LaTeX.
-
-### Fórmulas en línea
-Inserta fórmulas dentro de un párrafo, como esta: $\\sin^2(x) + \\cos^2(x) = 1$.
-
-### Fórmulas en bloque
-Para fórmulas más grandes, usa bloques dedicados. Por ejemplo, la fórmula para resolver ecuaciones de segundo grado:
-\\[
-x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}
-\\]
-`;
-
         // --- Funciones principales ---
         function updateHtml() {
             if (isUpdating) return;
@@ -461,23 +433,46 @@ x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}
             const savedContent = localStorage.getItem(AUTOSAVE_KEY);
             if (savedContent) {
                 markdownEditor.setValue(savedContent);
+                lastSaved = markdownEditor.getValue();
+                updateHtml();
+                markdownEditor.focus();
             } else {
-                markdownEditor.setValue(initialContent);
+                fetch('https://raw.githubusercontent.com/jjdeharo/edimarkweb/refs/heads/main/manual.md')
+                    .then(response => {
+                        if (!response.ok) {
+                            return Promise.resolve('');
+                        }
+                        return response.text();
+                    })
+                    .then(text => {
+                        markdownEditor.setValue(text);
+                        lastSaved = text;
+                        updateHtml();
+                        markdownEditor.focus();
+                    })
+                    .catch(error => {
+                        console.error('Error al obtener el contenido inicial:', error);
+                        lastSaved = '';
+                        updateHtml();
+                        markdownEditor.focus();
+                    });
             }
-            lastSaved = markdownEditor.getValue();
             
             setInterval(() => {
                 localStorage.setItem(AUTOSAVE_KEY, markdownEditor.getValue());
             }, 5000);
 
             markdownEditor.on('change', updateHtml);
+            
             htmlEditor.on('change', (instance) => {
-                if (isUpdating || !htmlEditor.hasFocus()) return;
-                isUpdating = true;
-                htmlOutput.innerHTML = instance.getValue();
-                updateMarkdown();
-                isUpdating = false;
+              if (!htmlEditor.hasFocus()) return;
+              if (isUpdating) return;
+              isUpdating = true;
+              htmlOutput.innerHTML = instance.getValue();
+              isUpdating = false;
+              updateMarkdown();
             });
+            
             htmlOutput.addEventListener('input', updateMarkdown);
 
             toolbar.addEventListener('click', (e) => {
@@ -578,7 +573,39 @@ x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}
             });
             
             copyMdBtn.addEventListener('click', () => copyToClipboard(markdownEditor.getValue(), copyMdBtn));
-            copyHtmlBtn.addEventListener('click', () => copyToClipboard(htmlEditor.getValue(), copyHtmlBtn));
+            
+            copyHtmlBtn.addEventListener('click', async () => {
+                const plainText = htmlEditor.getValue();
+                const richHtml = htmlOutput.innerHTML;
+                const originalIcon = copyHtmlBtn.innerHTML;
+
+                try {
+                    if (!window.ClipboardItem) {
+                        console.warn('La API ClipboardItem no es compatible. Usando método de reserva.');
+                        copyToClipboard(plainText, copyHtmlBtn); 
+                        return;
+                    }
+
+                    const item = new ClipboardItem({
+                        'text/plain': new Blob([plainText], { type: 'text/plain' }),
+                        'text/html': new Blob([richHtml], { type: 'text/html' })
+                    });
+                    await navigator.clipboard.write([item]);
+
+                    copyHtmlBtn.innerHTML = '<i data-lucide="check" class="text-green-500"></i>';
+                    if (window.lucide) lucide.createIcons();
+
+                } catch (err) {
+                    console.error('Error al copiar con la API moderna. Intentando con el método de reserva:', err);
+                    copyToClipboard(plainText, copyHtmlBtn);
+                    return; 
+                }
+
+                setTimeout(() => {
+                    copyHtmlBtn.innerHTML = originalIcon;
+                    if (window.lucide) lucide.createIcons();
+                }, 2000);
+            });
             
             printBtn.addEventListener('click', () => {
                 const printContent = document.getElementById('html-output').innerHTML;
@@ -654,8 +681,69 @@ x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}
                 }
             });
 
-            updateHtml();
-            markdownEditor.focus();
+            // --- Sincronización entre paneles ------------------------------
+            let syncLock = false;                // evita bucles infinitos
+
+            function lineRatio(editor) {
+              return editor.getCursor().line / Math.max(1, editor.lineCount() - 1);
+            }
+            function scrollRatio(el) {
+              return el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight);
+            }
+
+            function syncFromMarkdown() {
+              if (syncLock) return;
+              syncLock = true;
+
+              const ratio = lineRatio(markdownEditor);
+
+              if (cmWrapper.style.display === 'none') {           // modo previsualización
+                htmlOutput.scrollTop = ratio *
+                  (htmlOutput.scrollHeight - htmlOutput.clientHeight);
+              } else if (!htmlEditor.hasFocus()) {                // código HTML SIN foco
+                const scroller = htmlEditor.getScrollerElement();
+                scroller.scrollTop = ratio *
+                  (scroller.scrollHeight - scroller.clientHeight);
+                htmlEditor.setCursor(
+                  Math.round(ratio * (htmlEditor.lineCount() - 1)),
+                  0
+                );
+              }
+
+              syncLock = false;
+            }
+
+            function syncFromHtml() {
+              if (syncLock) return;
+              syncLock = true;
+
+              let ratio;
+              if (cmWrapper.style.display === 'none') {           // modo previsualización
+                ratio = scrollRatio(htmlOutput);
+              } else {                                            // código HTML
+                ratio = lineRatio(htmlEditor);
+              }
+
+              const scroller = markdownEditor.getScrollerElement();
+              scroller.scrollTop = ratio *
+                (scroller.scrollHeight - scroller.clientHeight);
+
+              if (!markdownEditor.hasFocus()) {                   // MD SIN foco
+                markdownEditor.setCursor(
+                  Math.round(ratio * (markdownEditor.lineCount() - 1)),
+                  0
+                );
+              }
+
+              syncLock = false;
+            }
+
+            // Eventos que disparan la sincronización
+            markdownEditor.on('cursorActivity', syncFromMarkdown);   // clic o flechas en MD
+            htmlEditor.on('cursorActivity', syncFromHtml);           // clic o flechas en HTML
+            htmlOutput.addEventListener('click', syncFromHtml);      // clic en previsualización
+            htmlOutput.addEventListener('keyup', syncFromHtml);      // flechas en previsualización
+
         };
     </script>
 </body>
