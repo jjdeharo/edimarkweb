@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <title>EdiMarkWeb: Editor Markdown &harr; HTML con LaTeX y DOCX</title>
+
+    <!-- Tailwind CSS con el plugin de Tipografía -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class'
+      };
+    </script>
+
+    <!-- Librerías de Markdown y HTML -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/turndown/7.1.1/turndown.min.js" defer></script>
+    
+    <!-- KaTeX para renderizar fórmulas LaTeX -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0KOVEMVIhbGKLCePo231CVQSHcLesaPSub69DVZXucRepAS5rPjer" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" xintegrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" defer></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.523.0/dist/umd/lucide.min.js" defer></script>
+    
+    <!-- CodeMirror: base y temas -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/eclipse.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/material-darker.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.js" defer></script>
+    
+    <!-- CodeMirror: modos de lenguaje y addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/mode/overlay.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/xml/xml.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/javascript/javascript.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/css/css.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/htmlmixed/htmlmixed.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/markdown/markdown.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/gfm/gfm.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/edit/continuelist.min.js" defer></script>
+
+    <!-- Split.js para paneles redimensionables -->
+    <script src="https://cdn.jsdelivr.net/npm/split.js/dist/split.min.js"></script>
+
+    <!-- DOCX → HTML -->
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.4.17/mammoth.browser.min.js" defer></script>
+
+    <style>
+        /* Estilos personalizados */
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        .dark body { background-color: #0f172a; }
+
+        .editor-wrapper { display: flex; }
+        .panel { min-width: 280px; }
+        
+        .CodeMirror, .editor-pane {
+            height: calc(100vh - 16rem);
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+        }
+        .dark .CodeMirror, .dark .editor-pane { border-color: #334155; }
+
+        .CodeMirror-focused {
+            outline: none;
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4) !important;
+        }
+        .dark .CodeMirror-focused { border-color: #60a5fa !important; }
+
+        .editor-pane { padding: 1rem; overflow-y: auto; background-color: #ffffff; }
+        .dark .editor-pane { background-color: #1e293b; color: #cbd5e1; }
+        .dark .prose { color: #cbd5e1; }
+        .dark .prose h1, .dark .prose h2, .dark .prose h3, .dark .prose strong { color: #f1f5f9; }
+        .dark .prose code { color: #e2e8f0; }
+        .dark .prose blockquote { border-left-color: #475569; color: #94a3b8;}
+        .dark .prose a { color: #93c5fd; }
+
+
+        .action-btn {
+            display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem;
+            border-radius: 0.375rem; color: #475569; background-color: transparent;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .action-btn:hover { background-color: #f1f5f9; color: #1e293b; }
+        .dark .action-btn { color: #94a3b8; }
+        .dark .action-btn:hover { background-color: #1e293b; color: #e2e8f0; }
+
+        .toolbar-btn, .copy-btn {
+            padding: 0.5rem; border-radius: 0.375rem; color: #475569;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .toolbar-btn:hover, .copy-btn:hover { background-color: #e2e8f0; color: #1e293b; }
+        .dark .toolbar-btn, .dark .copy-btn { color: #94a3b8; }
+        .dark .toolbar-btn:hover, .dark .copy-btn:hover { background-color: #334155; color: #e2e8f0; }
+
+        .gutter { background-color: #f1f5f9; background-repeat: no-repeat; background-position: 50%; }
+        .dark .gutter { background-color: #0f172a; }
+        .gutter.gutter-horizontal { cursor: col-resize; background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxl79uzZDCADgEYDAB0AowCgKADlHw4hA2g+ADoApxt/9k+AAAAAElFTkSuQmCC'); }
+    </style>
+</head>
+<body class="p-4 sm:p-6 md:p-8">
+
+<main class="max-w-7xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 dark:bg-slate-900 dark:border-slate-700">
+    <header class="p-4 border-b border-slate-200 flex flex-wrap justify-between items-center gap-4 dark:border-slate-700">
+        <h1 class="text-xl font-semibold text-slate-800 dark:text-slate-100">EdiMarkWeb</h1>
+        <div class="flex items-center gap-1 sm:gap-2">
+            <button id="theme-toggle-btn" class="action-btn focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400" aria-label="Cambiar tema"></button>
+            <button id="open-file-btn" class="action-btn focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400" title="Abrir archivo"><i data-lucide="folder-open" class="text-blue-600"></i><span class="hidden sm:inline">Abrir</span></button>
+            <input type="file" id="file-input" class="hidden" accept=".md,.markdown,.html,.docx">
+            <button id="save-btn" class="action-btn focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400" title="Guardar archivo (Ctrl+S)"><i data-lucide="save" class="text-green-600"></i><span class="hidden sm:inline">Guardar</span></button>
+            <button id="print-btn" class="action-btn focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400" title="Imprimir (Ctrl+P)"><i data-lucide="printer" class="text-slate-600 dark:text-slate-400"></i></button>
+            <button id="clear-all-btn" class="action-btn focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400" title="Borrar todo"><i data-lucide="trash-2" class="text-red-600"></i></button>
+        </div>
+    </header>
+
+    <div class="p-4">
+        <!-- Barra de herramientas de formato -->
+        <div id="toolbar" class="bg-slate-50 p-2 rounded-lg mb-4 flex flex-wrap items-center gap-2 border border-slate-200 dark:bg-slate-800 dark:border-slate-700">
+             <div class="flex items-center gap-1">
+                <button class="toolbar-btn focus-visible:ring-2 focus-visible:ring-blue-500" data-format="bold" title="Negrita (Ctrl+B)"><i data-lucide="bold"></i></button>
+                <button class="toolbar-btn focus-visible:ring-2 focus-visible:ring-blue-500" data-format="italic" title="Cursiva (Ctrl+I)"><i data-lucide="italic"></i></button>
+                <div class="relative" id="heading-dropdown-container">
+                    <button id="heading-btn" class="toolbar-btn focus-visible:ring-2 focus-visible:ring-blue-500" title="Encabezado"><i data-lucide="heading-1"></i></button>
+                    <div id="heading-options" class="absolute z-10 -left-2 mt-2 w-40 bg-white rounded-md shadow-lg border border-slate-200 hidden dark:bg-slate-700 dark:border-slate-600">
+                        <button class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-600" data-format="heading-1">Título 1</button>
+                        <button class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-600" data-format="heading-2">Título 2</button>
+                        <button class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-600" data-format="heading-3">Título 3</button>
+                        <button class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-600" data-format="heading-4">Título 4</button>
+                    </div>
+                </div>
+            </div>
+            <div class="border-l h-6 border-slate-300 dark:border-slate-600"></div>
+            <div class="flex items-center gap-1">
+                <button class="toolbar-btn focus-visible:ring-2 focus-visible:ring-blue-500" data-format="quote" title="Cita"><i data-lucide="quote"></i></button>
+                <button class="toolbar-btn focus-visible:ring-2 focus-visible:ring-blue-500" data-format="list-ul" title="Lista"><i data-lucide="list"></i></button>
+                <button class="toolbar-btn focus-visible:ring-2 focus-visible:ring-blue-500" data-format="list-ol" title="Lista numerada"><i data-lucide="list-ordered"></i></button>
+            </div>
+            <div class="border-l h-6 border-slate-300 dark:border-slate-600"></div>
+            <div class="flex items-center gap-1">
+                <button class="toolbar-btn focus-visible:ring-2 focus-visible:ring-blue-500" data-format="code" title="Código"><i data-lucide="code-2"></i></button>
+                <button class="toolbar-btn focus-visible:ring-2 focus-visible:ring-blue-500" data-format="link" title="Enlace"><i data-lucide="link"></i></button>
+                <button class="toolbar-btn focus-visible:ring-2 focus-visible:ring-blue-500" data-format="image" title="Imagen"><i data-lucide="image"></i></button>
+                <button class="toolbar-btn focus-visible:ring-2 focus-visible:ring-blue-500" data-format="table" title="Tabla"><i data-lucide="table"></i></button>
+            </div>
+            <div class="border-l h-6 border-slate-300 dark:border-slate-600"></div>
+            <div class="flex items-center gap-1">
+                <button class="toolbar-btn focus-visible:ring-2 focus-visible:ring-blue-500" data-format="latex-inline" title="Fórmula LaTeX (en línea)"><i data-lucide="sigma"></i></button>
+                <button class="toolbar-btn focus-visible:ring-2 focus-visible:ring-blue-500" data-format="latex-block" title="Fórmula LaTeX (bloque)"><i data-lucide="function-square"></i></button>
+            </div>
+        </div>
+
+        <!-- Paneles del editor -->
+        <div id="editor-container" class="editor-wrapper">
+            <div id="markdown-panel" class="panel w-1/2">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-lg font-medium text-slate-700 dark:text-slate-200">Markdown</h2>
+                    <button id="copy-md-btn" class="copy-btn focus-visible:ring-2 focus-visible:ring-blue-500" title="Copiar Markdown"><i data-lucide="copy"></i></button>
+                </div>
+                <textarea id="markdown-input"></textarea>
+            </div>
+            <div id="html-panel" class="panel w-1/2">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 id="html-panel-title" class="text-lg font-medium text-slate-700 dark:text-slate-200">Previsualización</h2>
+                    <div class="flex items-center gap-2">
+                        <button id="view-toggle-btn" class="toolbar-btn focus-visible:ring-2 focus-visible:ring-blue-500" title="Cambiar a vista de código"><i data-lucide="code-2"></i></button>
+                        <button id="copy-html-btn" class="copy-btn focus-visible:ring-2 focus-visible:ring-blue-500" title="Copiar HTML"><i data-lucide="copy"></i></button>
+                    </div>
+                </div>
+                <div id="html-output" contenteditable="true" spellcheck="false" class="editor-pane w-full prose max-w-none"></div>
+                <textarea id="html-source-view" class="hidden"></textarea>
+            </div>
+        </div>
+    </div>
+</main>
+
+
+    <!-- Modales -->
+    <div id="table-modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm dark:bg-slate-800">
+            <h3 class="text-lg font-bold mb-4 text-slate-800 dark:text-slate-100">Crear tabla</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="table-cols" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Columnas</label>
+                    <input type="number" id="table-cols" value="3" min="1" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200">
+                </div>
+                <div>
+                    <label for="table-rows" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Filas (de datos)</label>
+                    <input type="number" id="table-rows" value="2" min="1" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button id="cancel-table-btn" class="px-4 py-2 bg-slate-100 text-slate-800 rounded-md hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-blue-500 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">Cancelar</button>
+                <button id="create-table-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500">Crear</button>
+            </div>
+        </div>
+    </div>
+    <div id="save-modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm dark:bg-slate-800">
+            <h3 class="text-lg font-bold mb-4 text-slate-800 dark:text-slate-100">Guardar como...</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="filename" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Nombre del archivo</label>
+                    <input type="text" id="filename" value="documento" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Formato</label>
+                    <div class="mt-2 space-y-2">
+                        <div class="flex items-center">
+                            <input id="format-md" name="save-format" type="radio" checked class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-slate-300 dark:bg-slate-700 dark:border-slate-600">
+                            <label for="format-md" class="ml-3 block text-sm font-medium text-slate-700 dark:text-slate-300">Markdown (.md)</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input id="format-html" name="save-format" type="radio" class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-slate-300 dark:bg-slate-700 dark:border-slate-600">
+                            <label for="format-html" class="ml-3 block text-sm font-medium text-slate-700 dark:text-slate-300">HTML (.html)</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input id="format-docx" name="save-format" type="radio" class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-slate-300 dark:bg-slate-700 dark:border-slate-600">
+                            <label for="format-docx" class="ml-3 block text-sm font-medium text-slate-700 dark:text-slate-300">Word (.docx)</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button id="cancel-save-btn" class="px-4 py-2 bg-slate-100 text-slate-800 rounded-md hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-blue-500 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">Cancelar</button>
+                <button id="confirm-save-btn" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-500">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Librería html-to-docx empaquetada para navegador -->
+    <script src="html-to-docx.browser.js"></script>
+
+    <script>
+      async function exportarDocx(nombre = 'documento') {
+        // 1. Asegúrate de que el HTML mostrado está actualizado
+        if (typeof updateHtml === 'function') updateHtml();
+
+        // 2. Selecciona la fuente HTML que quieras convertir
+        const htmlSource = document.getElementById('html-output').innerHTML;
+
+        // 3. Genera el Blob DOCX
+        const blob = await htmlToDocx(htmlSource, null, { orientation: 'portrait' });
+
+        // 4. Fuerza la descarga
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${nombre}.docx`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+    </script>
+    
+    <script>
+        // Declaración de variables globales
+        let turndownService;
+        let isUpdating = false;
+        let markdownEditor, htmlEditor;
+        const AUTOSAVE_KEY = 'edimarkweb-autosave';
+        let lastSaved = '';
+
+        // --- Funciones principales ---
+        function updateHtml() {
+            if (isUpdating) return;
+            isUpdating = true;
+            const markdownText = markdownEditor.getValue();
+            const htmlOutput = document.getElementById('html-output');
+            
+            const sanitizedText = markdownText.replace(/\\\\/g, '\\\\\\\\').replace(/\\\[/g, '\\\\[').replace(/\\\]/g, '\\\\]').replace(/\\\(/g, '\\\\(').replace(/\\\)/g, '\\\\)');
+            
+            if (window.marked) {
+                const rawHtml = marked.parse(sanitizedText);
+                htmlOutput.innerHTML = rawHtml;
+                if (htmlEditor && !htmlEditor.hasFocus()) {
+                    htmlEditor.setValue(rawHtml);
+                }
+            }
+
+            try {
+                if (window.renderMathInElement) {
+                    renderMathInElement(htmlOutput, {
+                        delimiters: [
+                            {left: '$$', right: '$$', display: true}, {left: '\\[', right: '\\]', display: true},
+                            {left: '$', right: '$', display: false}, {left: '\\(', right: '\\)', display: false}
+                        ], throwOnError: false
+                    });
+                }
+            } catch (error) { console.warn("KaTeX no está listo.", error); }
+            isUpdating = false;
+        }
+
+        function updateMarkdown() {
+            if (isUpdating) return;
+            isUpdating = true;
+            const htmlOutput = document.getElementById('html-output');
+            if (turndownService && !markdownEditor.hasFocus()) {
+                markdownEditor.setValue(turndownService.turndown(htmlOutput.innerHTML));
+            }
+            isUpdating = false;
+        }
+
+        function applyFormat(format) {
+            const selectedText = markdownEditor.getSelection();
+            let newText = '';
+            switch (format) {
+                case 'bold': newText = `**${selectedText || 'texto en negrita'}**`; break;
+                case 'italic': newText = `*${selectedText || 'texto en cursiva'}*`; break;
+                case 'heading-1': newText = `\n# ${selectedText || 'Título 1'}\n`; break;
+                case 'heading-2': newText = `\n## ${selectedText || 'Título 2'}\n`; break;
+                case 'heading-3': newText = `\n### ${selectedText || 'Título 3'}\n`; break;
+                case 'heading-4': newText = `\n#### ${selectedText || 'Título 4'}\n`; break;
+                case 'quote': newText = `\n> ${selectedText || 'Cita'}\n`; break;
+                case 'list-ul': {
+                  if (!selectedText) { newText = '\n- '; break; }
+                  newText = selectedText
+                    .split('\n')
+                    .map(l => l.replace(/^(\s*)([-*+]|(\d+\.))\s+/, '$1').replace(/^(\s*)$/, '$1'))
+                    .map(l => l.trim() ? `- ${l}` : '')
+                    .join('\n');
+                  break;
+                }
+                case 'list-ol': {
+                  if (!selectedText) { newText = '\n1. '; break; }
+                  const lines = selectedText
+                    .split('\n')
+                    .map(l => l.replace(/^(\s*)([-*+]|(\d+\.))\s+/, '$1'));
+                  newText = lines
+                    .map((l, i) => l.trim() ? `${i + 1}. ${l}` : '')
+                    .join('\n');
+                  break;
+                }
+                case 'code': newText = `\`${selectedText || 'código'}\``; break;
+                case 'link': newText = `[${selectedText || 'texto del enlace'}](https://www.ejemplo.com)`; break;
+                case 'image': newText = `![${selectedText || 'texto alternativo'}](https://via.placeholder.com/150)`; break;
+                case 'table': toggleTableModal(true); return;
+                case 'latex-inline': newText = `$${selectedText || 'E=mc^2'}$`; break;
+                case 'latex-block': newText = `\n\\[\n${selectedText || 'f(x) = x^2'}\n\\]\n`; break;
+            }
+            markdownEditor.replaceSelection(newText);
+            markdownEditor.focus();
+        }
+
+        function toggleTableModal(show) { document.getElementById('table-modal-overlay').style.display = show ? 'flex' : 'none'; }
+        function toggleSaveModal(show) { document.getElementById('save-modal-overlay').style.display = show ? 'flex' : 'none'; }
+        
+        function saveFile(filename, content, type) {
+            const blob = (content instanceof Blob) ? content : new Blob([content], { type });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(a.href);
+        }
+
+        function copyToClipboard(text, btn) {
+            const originalIcon = btn.innerHTML;
+            navigator.clipboard.writeText(text).then(() => {
+                btn.innerHTML = '<i data-lucide="check" class="text-green-500"></i>';
+                if (window.lucide) lucide.createIcons();
+            }).catch(err => {
+                console.error('Error al copiar:', err);
+                btn.innerHTML = '<i data-lucide="x" class="text-red-500"></i>';
+                if (window.lucide) lucide.createIcons();
+            }).finally(() => {
+                setTimeout(() => {
+                    btn.innerHTML = originalIcon;
+                    if (window.lucide) lucide.createIcons();
+                }, 2000);
+            });
+        }
+
+        window.onload = () => {
+            const htmlOutput = document.getElementById('html-output');
+            const viewToggleBtn = document.getElementById('view-toggle-btn');
+            const htmlPanelTitle = document.getElementById('html-panel-title');
+            const toolbar = document.getElementById('toolbar');
+            const openFileBtn = document.getElementById('open-file-btn');
+            const fileInput = document.getElementById('file-input');
+            const saveBtn = document.getElementById('save-btn');
+            const printBtn = document.getElementById('print-btn');
+            const clearAllBtn = document.getElementById('clear-all-btn');
+            const copyMdBtn = document.getElementById('copy-md-btn');
+            const copyHtmlBtn = document.getElementById('copy-html-btn');
+            const tableModalOverlay = document.getElementById('table-modal-overlay');
+            const createTableBtn = document.getElementById('create-table-btn');
+            const cancelTableBtn = document.getElementById('cancel-table-btn');
+            const saveModalOverlay = document.getElementById('save-modal-overlay');
+            const confirmSaveBtn = document.getElementById('confirm-save-btn');
+            const cancelSaveBtn = document.getElementById('cancel-save-btn');
+            const headingBtn = document.getElementById('heading-btn');
+            const headingOptions = document.getElementById('heading-options');
+            const headingDropdownContainer = document.getElementById('heading-dropdown-container');
+            const themeToggleBtn = document.getElementById('theme-toggle-btn');
+
+            if (window.TurndownService) {
+                turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
+            }
+
+            markdownEditor = CodeMirror.fromTextArea(document.getElementById('markdown-input'), {
+                mode: 'gfm', theme: 'eclipse', lineNumbers: true,
+                lineWrapping: true, autofocus: true,
+                extraKeys: {
+                    'Enter': 'newlineAndIndentContinueMarkdownList',
+                    'Tab': 'indentMore',
+                    'Shift-Tab': 'indentLess'
+                }
+            });
+
+            htmlEditor = CodeMirror.fromTextArea(document.getElementById('html-source-view'), {
+                mode: 'htmlmixed', theme: 'eclipse', lineNumbers: true, lineWrapping: true
+            });
+            const cmWrapper = htmlEditor.getWrapperElement();
+            cmWrapper.style.display = 'none';
+
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+            const storedTheme = localStorage.getItem('theme');
+
+            function applyTheme(theme) {
+              document.documentElement.classList.toggle('dark', theme === 'dark');
+              localStorage.setItem('theme', theme);
+              
+              const newEditorTheme = theme === 'dark' ? 'material-darker' : 'eclipse';
+              markdownEditor.setOption('theme', newEditorTheme);
+              htmlEditor.setOption('theme', newEditorTheme);
+
+              const icon = theme === 'dark' ? 'moon' : 'sun';
+              themeToggleBtn.innerHTML = `<i data-lucide="${icon}"></i>`;
+              if (window.lucide) lucide.createIcons();
+            }
+
+            if (storedTheme) {
+              applyTheme(storedTheme);
+            } else {
+              applyTheme(prefersDark.matches ? 'dark' : 'light');
+            }
+
+            prefersDark.addEventListener('change', (e) => {
+              if (!localStorage.getItem('theme')) {
+                applyTheme(e.matches ? 'dark' : 'light');
+              }
+            });
+
+            themeToggleBtn.addEventListener('click', () => {
+              const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+              applyTheme(newTheme);
+            });
+
+            Split(['#markdown-panel', '#html-panel'], {
+                sizes: [50, 50],
+                minSize: 280,
+                gutterSize: 8,
+                onDrag: () => {
+                    markdownEditor.refresh();
+                    htmlEditor.refresh();
+                }
+            });
+
+            const savedContent = localStorage.getItem(AUTOSAVE_KEY);
+            if (savedContent) {
+                markdownEditor.setValue(savedContent);
+                lastSaved = markdownEditor.getValue();
+                updateHtml();
+                markdownEditor.focus();
+            } else {
+                fetch('https://raw.githubusercontent.com/jjdeharo/edimarkweb/refs/heads/main/manual.md')
+                    .then(response => {
+                        if (!response.ok) {
+                            return Promise.resolve('');
+                        }
+                        return response.text();
+                    })
+                    .then(text => {
+                        markdownEditor.setValue(text);
+                        lastSaved = text;
+                        updateHtml();
+                        markdownEditor.focus();
+                    })
+                    .catch(error => {
+                        console.error('Error al obtener el contenido inicial:', error);
+                        lastSaved = '';
+                        updateHtml();
+                        markdownEditor.focus();
+                    });
+            }
+            
+            setInterval(() => {
+                localStorage.setItem(AUTOSAVE_KEY, markdownEditor.getValue());
+            }, 5000);
+
+            markdownEditor.on('change', updateHtml);
+            
+            htmlEditor.on('change', (instance) => {
+              if (!htmlEditor.hasFocus()) return;
+              if (isUpdating) return;
+              isUpdating = true;
+              htmlOutput.innerHTML = instance.getValue();
+              isUpdating = false;
+              updateMarkdown();
+            });
+            
+            htmlOutput.addEventListener('input', updateMarkdown);
+
+            toolbar.addEventListener('click', (e) => {
+                const button = e.target.closest('button');
+                if (button && button.dataset.format) {
+                    applyFormat(button.dataset.format);
+                    if (button.dataset.format.startsWith('heading-')) {
+                        headingOptions.classList.add('hidden');
+                    }
+                }
+            });
+            
+            headingBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                headingOptions.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!headingDropdownContainer.contains(e.target)) {
+                    headingOptions.classList.add('hidden');
+                }
+            });
+
+            viewToggleBtn.addEventListener('click', () => {
+                const isPreviewVisible = htmlOutput.style.display !== 'none';
+                if (isPreviewVisible) {
+                    htmlOutput.style.display = 'none';
+                    cmWrapper.style.display = 'block';
+                    setTimeout(() => htmlEditor.refresh(), 1);
+                    htmlPanelTitle.textContent = 'Código HTML';
+                    viewToggleBtn.title = 'Cambiar a previsualización';
+                    viewToggleBtn.innerHTML = '<i data-lucide="eye"></i>';
+                } else {
+                    cmWrapper.style.display = 'none';
+                    htmlOutput.style.display = 'block';
+                    htmlPanelTitle.textContent = 'Previsualización';
+                    viewToggleBtn.title = 'Cambiar a vista de código';
+                    viewToggleBtn.innerHTML = '<i data-lucide="code-2"></i>';
+                }
+                if (window.lucide) lucide.createIcons();
+            });
+            
+            createTableBtn.addEventListener('click', () => {
+                const cols = parseInt(document.getElementById('table-cols').value, 10) || 2;
+                const rows = parseInt(document.getElementById('table-rows').value, 10) || 1;
+                let tableMd = '\n|';
+                for (let i = 1; i <= cols; i++) { tableMd += ` Cabecera ${i} |`; }
+                tableMd += '\n|';
+                for (let i = 0; i < cols; i++) { tableMd += '------------|'; }
+                tableMd += '\n';
+                for (let r = 0; r < rows; r++) {
+                    tableMd += '|';
+                    for (let c = 0; c < cols; c++) { tableMd += ' Celda      |'; }
+                    tableMd += '\n';
+                }
+                markdownEditor.replaceSelection(tableMd);
+                toggleTableModal(false);
+                markdownEditor.focus();
+            });
+            cancelTableBtn.addEventListener('click', () => toggleTableModal(false));
+            tableModalOverlay.addEventListener('click', (e) => { if (e.target === tableModalOverlay) toggleTableModal(false); });
+            
+            saveBtn.addEventListener('click', () => toggleSaveModal(true));
+            
+            confirmSaveBtn.addEventListener('click', () => {
+                const filenameInput = document.getElementById('filename');
+                const filename = filenameInput.value || 'documento';
+                
+                if (document.getElementById('format-docx').checked) {
+                    exportarDocx(filename);
+                    toggleSaveModal(false);
+                    return;
+                }
+                
+                if (document.getElementById('format-md').checked) {
+                    saveFile(`${filename}.md`, markdownEditor.getValue(), 'text/markdown;charset=utf-8');
+                } else if (document.getElementById('format-html').checked) {
+                    const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"></head><body class="prose">${htmlOutput.innerHTML}</body></html>`;
+                    saveFile(`${filename}.html`, htmlContent, 'text/html;charset=utf-8');
+                }
+
+                lastSaved = markdownEditor.getValue();
+                localStorage.removeItem(AUTOSAVE_KEY);
+                toggleSaveModal(false);
+            });
+
+            cancelSaveBtn.addEventListener('click', () => toggleSaveModal(false));
+            saveModalOverlay.addEventListener('click', (e) => { if (e.target === saveModalOverlay) toggleSaveModal(false); });
+
+            openFileBtn.addEventListener('click', () => fileInput.click());
+            
+            fileInput.onchange = async e => {
+              const file = e.target.files[0];
+              
+              if (file && file.name.endsWith('.docx')) {
+                  try {
+                    if (typeof mammoth === 'undefined') {
+                        throw new Error("La librería Mammoth.js no está cargada.");
+                    }
+                    const { value: html } = await mammoth.convertToHtml({
+                      arrayBuffer: await file.arrayBuffer()
+                    });
+
+                    htmlOutput.innerHTML = html;  // Muestra la conversión.
+                    updateMarkdown();             // Tu función HTML → Markdown.
+                    lastSaved = markdownEditor.getValue();
+                  } catch (err) {
+                    console.error('DOCX error', err);
+                    alert('No se pudo leer el archivo Word.');
+                  }
+                  fileInput.value = '';           // Limpia el input.
+                  return;
+              }
+
+              // Lógica para otros formatos (.md, .html).
+              if (file) {
+                  const reader = new FileReader();
+                  reader.onload = (e) => {
+                      if (file.name.endsWith(".html")) { 
+                          htmlOutput.innerHTML = e.target.result; 
+                          updateMarkdown(); 
+                      } else { // .md, .markdown, u otros.
+                          markdownEditor.setValue(e.target.result); 
+                      }
+                      lastSaved = markdownEditor.getValue();
+                  };
+                  reader.readAsText(file);
+                  fileInput.value = '';
+              }
+            };
+            
+            copyMdBtn.addEventListener('click', () => copyToClipboard(markdownEditor.getValue(), copyMdBtn));
+            
+            copyHtmlBtn.addEventListener('click', async () => {
+                const plainText = htmlEditor.getValue();
+                const richHtml = htmlOutput.innerHTML;
+                const originalIcon = copyHtmlBtn.innerHTML;
+
+                try {
+                    if (!window.ClipboardItem) {
+                        console.warn('La API ClipboardItem no es compatible. Usando método de reserva.');
+                        copyToClipboard(plainText, copyHtmlBtn); 
+                        return;
+                    }
+
+                    const item = new ClipboardItem({
+                        'text/plain': new Blob([plainText], { type: 'text/plain' }),
+                        'text/html': new Blob([richHtml], { type: 'text/html' })
+                    });
+                    await navigator.clipboard.write([item]);
+
+                    copyHtmlBtn.innerHTML = '<i data-lucide="check" class="text-green-500"></i>';
+                    if (window.lucide) lucide.createIcons();
+
+                } catch (err) {
+                    console.error('Error al copiar con la API moderna. Intentando con el método de reserva:', err);
+                    copyToClipboard(plainText, copyHtmlBtn);
+                    return; 
+                }
+
+                setTimeout(() => {
+                    copyHtmlBtn.innerHTML = originalIcon;
+                    if (window.lucide) lucide.createIcons();
+                }, 2000);
+            });
+            
+            printBtn.addEventListener('click', () => {
+                const printContent = document.getElementById('html-output').innerHTML;
+                const iframe = document.createElement('iframe');
+                iframe.style.position = 'absolute'; iframe.style.width = '0';
+                iframe.style.height = '0'; iframe.style.border = '0';
+                document.body.appendChild(iframe);
+
+                const doc = iframe.contentWindow.document;
+                doc.open();
+                doc.write(`
+                    <!DOCTYPE html><html><head><title>Imprimir</title>
+                    <script src="https://cdn.tailwindcss.com?plugins=typography"><\/script>
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+                    <style>body { margin: 1.5rem; -webkit-print-color-adjust: exact; print-color-adjust: exact; }</style>
+                    </head><body class="prose max-w-none">${printContent}</body></html>
+                `);
+                doc.close();
+
+                setTimeout(() => {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                    document.body.removeChild(iframe);
+                }, 500);
+            });
+
+            clearAllBtn.addEventListener('click', () => {
+                markdownEditor.setValue('');
+                lastSaved = '';
+                markdownEditor.focus();
+            });
+
+            window.addEventListener('beforeunload', (e) => {
+                if (markdownEditor.getValue() !== lastSaved) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                const isMac = navigator.platform.includes('Mac');
+                const accel = isMac ? e.metaKey : e.ctrlKey;
+
+                if (!accel) return;
+
+                switch (e.key.toLowerCase()) {
+                    case 'b':
+                    e.preventDefault();
+                    applyFormat('bold');
+                    break;
+                    case 'i':
+                    e.preventDefault();
+                    applyFormat('italic');
+                    break;
+                    case 's':
+                    e.preventDefault();
+                    toggleSaveModal(true);
+                    break;
+                    case 'p':
+                    e.preventDefault();
+                    printBtn.click();
+                    break;
+                }
+            });
+            
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+
+            document.querySelectorAll('button[title]').forEach(btn => {
+                if (!btn.hasAttribute('aria-label')) {
+                    btn.setAttribute('aria-label', btn.title.replace(/\s*\(.+\)$/, ''));
+                }
+            });
+
+            // --- Sincronización entre paneles ------------------------------
+            let syncLock = false;                // evita bucles infinitos
+
+            function lineRatio(editor) {
+              return editor.getCursor().line / Math.max(1, editor.lineCount() - 1);
+            }
+            function scrollRatio(el) {
+              return el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight);
+            }
+
+            function syncFromMarkdown() {
+              if (syncLock) return;
+              syncLock = true;
+
+              const ratio = lineRatio(markdownEditor);
+
+              if (cmWrapper.style.display === 'none') {           // modo previsualización
+                htmlOutput.scrollTop = ratio *
+                  (htmlOutput.scrollHeight - htmlOutput.clientHeight);
+              } else if (!htmlEditor.hasFocus()) {                // código HTML SIN foco
+                const scroller = htmlEditor.getScrollerElement();
+                scroller.scrollTop = ratio *
+                  (scroller.scrollHeight - scroller.clientHeight);
+                htmlEditor.setCursor(
+                  Math.round(ratio * (htmlEditor.lineCount() - 1)),
+                  0
+                );
+              }
+
+              syncLock = false;
+            }
+
+            function syncFromHtml() {
+              if (syncLock) return;
+              syncLock = true;
+
+              let ratio;
+              if (cmWrapper.style.display === 'none') {           // modo previsualización
+                ratio = scrollRatio(htmlOutput);
+              } else {                                            // código HTML
+                ratio = lineRatio(htmlEditor);
+              }
+
+              const scroller = markdownEditor.getScrollerElement();
+              scroller.scrollTop = ratio *
+                (scroller.scrollHeight - scroller.clientHeight);
+
+              if (!markdownEditor.hasFocus()) {                   // MD SIN foco
+                markdownEditor.setCursor(
+                  Math.round(ratio * (markdownEditor.lineCount() - 1)),
+                  0
+                );
+              }
+
+              syncLock = false;
+            }
+
+            // Eventos que disparan la sincronización
+            markdownEditor.on('cursorActivity', syncFromMarkdown);   // clic o flechas en MD
+            htmlEditor.on('cursorActivity', syncFromHtml);           // clic o flechas en HTML
+            htmlOutput.addEventListener('click', syncFromHtml);      // clic en previsualización
+            htmlOutput.addEventListener('keyup', syncFromHtml);      // flechas en previsualización
+
+        };
+    </script>
+</body>
+</html>
