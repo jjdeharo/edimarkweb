@@ -33,6 +33,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/htmlmixed/htmlmixed.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/markdown/markdown.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/gfm/gfm.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/edit/continuelist.min.js" defer></script>
 
     <!-- Split.js para paneles redimensionables -->
     <script src="https://cdn.jsdelivr.net/npm/split.js/dist/split.min.js"></script>
@@ -280,8 +281,25 @@ x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}
                 case 'heading-3': newText = `\n### ${selectedText || 'Título 3'}\n`; break;
                 case 'heading-4': newText = `\n#### ${selectedText || 'Título 4'}\n`; break;
                 case 'quote': newText = `\n> ${selectedText || 'Cita'}\n`; break;
-                case 'list-ul': newText = `\n- ${selectedText || 'Elemento 1'}\n- Elemento 2`; break;
-                case 'list-ol': newText = `\n1. ${selectedText || 'Elemento 1'}\n2. Elemento 2`; break;
+                case 'list-ul': {
+                  if (!selectedText) { newText = '\n- '; break; }
+                  newText = selectedText
+                    .split('\n')
+                    .map(l => l.replace(/^(\s*)([-*+]|(\d+\.))\s+/, '$1').replace(/^(\s*)$/, '$1'))
+                    .map(l => l.trim() ? `- ${l}` : '')
+                    .join('\n');
+                  break;
+                }
+                case 'list-ol': {
+                  if (!selectedText) { newText = '\n1. '; break; }
+                  const lines = selectedText
+                    .split('\n')
+                    .map(l => l.replace(/^(\s*)([-*+]|(\d+\.))\s+/, '$1'));
+                  newText = lines
+                    .map((l, i) => l.trim() ? `${i + 1}. ${l}` : '')
+                    .join('\n');
+                  break;
+                }
                 case 'code': newText = `\`${selectedText || 'código'}\``; break;
                 case 'link': newText = `[${selectedText || 'texto del enlace'}](https://www.ejemplo.com)`; break;
                 case 'image': newText = `![${selectedText || 'texto alternativo'}](https://via.placeholder.com/150)`; break;
@@ -352,7 +370,12 @@ x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}
 
             markdownEditor = CodeMirror.fromTextArea(document.getElementById('markdown-input'), {
                 mode: 'gfm', theme: 'eclipse', lineNumbers: true,
-                lineWrapping: true, autofocus: true
+                lineWrapping: true, autofocus: true,
+                extraKeys: {
+                    'Enter': 'newlineAndIndentContinueMarkdownList',
+                    'Tab': 'indentMore',
+                    'Shift-Tab': 'indentLess'
+                }
             });
 
             htmlEditor = CodeMirror.fromTextArea(document.getElementById('html-source-view'), {
