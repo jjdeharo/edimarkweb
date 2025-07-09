@@ -230,11 +230,18 @@
         </div>
     </div>
     
-    <!-- Polyfill de EventEmitter (módulo 'events' de Node) -->
-    <script src="events.js"></script>
-    
-    <!-- Librería html-to-docx empaquetada para navegador -->
-    <script src="html-to-docx.browser.js"></script>
+<!-- Polyfill de EventEmitter (compatible navegador) -->
+<script src="events.min.js"></script>
+
+<!-- Alias que espera html-to-docx -->
+<script>
+  /* jsdelivr crea window.events; Rollup espera events__default.default */
+  window.events__default = { default: window.events.EventEmitter || window.EventEmitter };
+</script>
+
+<!-- Librería html-to-docx empaquetada para navegador -->
+<script src="html-to-docx.browser.js"></script>
+
 
     <script>
       async function exportarDocx(nombre = 'documento') {
