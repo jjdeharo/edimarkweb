@@ -176,6 +176,10 @@
     </div>
 </main>
 
+<footer class="text-center text-sm text-slate-500 py-4 dark:text-slate-400">
+  Beta 2
+</footer>
+
 
     <!-- Modales -->
     <div id="table-modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
@@ -230,45 +234,9 @@
         </div>
     </div>
     
-    <!-- 1️⃣  Shim CommonJS muy pequeño -->
-    <script>
-      window.module  = { exports: {} };
-      window.exports = window.module.exports;
-    </script>
-    
-    <!-- 2️⃣  La librería events (CommonJS) -->
-    <script src="https://cdn.jsdelivr.net/npm/events@3.3.0/events.min.js"></script>
-    
-    <!-- 3️⃣  Hacemos visible EventEmitter para Rollup -->
-    <script>
-      window.events = window.module.exports;   // <- ahora sí existe
-      delete window.module;
-      delete window.exports;
-    </script>
-    
-    <!-- 4️⃣  html-to-docx ya encuentra EventEmitter -->
-    <script src="html-to-docx.browser.js"></script>
+    <!-- html-docx-js: versión pensada para el navegador -->
+    <script src="https://cdn.jsdelivr.net/npm/html-docx-js@1.0.2/dist/html-docx.min.js"></script>
 
-    <script>
-      async function exportarDocx(nombre = 'documento') {
-        // 1. Asegúrate de que el HTML mostrado está actualizado
-        if (typeof updateHtml === 'function') updateHtml();
-
-        // 2. Selecciona la fuente HTML que quieras convertir
-        const htmlSource = document.getElementById('html-output').innerHTML;
-
-        // 3. Genera el Blob DOCX
-        const blob = await htmlToDocx(htmlSource, null, { orientation: 'portrait' });
-
-        // 4. Fuerza la descarga
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `${nombre}.docx`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-      }
-    </script>
-    
     <script>
         // Declaración de variables globales
         let turndownService;
@@ -277,6 +245,27 @@
         const AUTOSAVE_KEY = 'edimarkweb-autosave';
         let lastSaved = '';
 
+        async function exportarDocx(nombre = 'documento') {
+          // Asegúrate de que la vista previa está al día
+          if (typeof updateHtml === 'function') updateHtml();
+
+          // Montamos un HTML completo (encabezado + cuerpo)
+          const html =
+            '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>' +
+            document.getElementById('html-output').innerHTML +
+            '</body></html>';
+
+          // htmlDocx.asBlob genera el DOCX
+          const blob = htmlDocx.asBlob(html);
+
+          // Fuerza la descarga
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = nombre + '.docx';
+          a.click();
+          URL.revokeObjectURL(a.href);
+        }
+    
         // --- Funciones principales ---
         function updateHtml() {
             if (isUpdating) return;
@@ -807,7 +796,7 @@
 
               if (!markdownEditor.hasFocus()) {                   // MD SIN foco
                 markdownEditor.setCursor(
-                  Math.round(ratio * (htmlEditor.lineCount() - 1)),
+                  Math.round(ratio * (markdownEditor.lineCount() - 1)),
                   0
                 );
               }
