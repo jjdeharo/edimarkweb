@@ -230,12 +230,8 @@
         </div>
     </div>
 
-    <!-- html-to-docx en formato ESM y compatible con navegador -->
-    <script type="module">
-      import htmlToDocx from "https://cdn.jsdelivr.net/npm/html-to-docx@2.4.0/+esm";
-      // lo exponemos para que el resto del código (no-módulo) lo pueda usar
-      window.htmlToDocx = htmlToDocx;
-    </script>
+    <!-- HTML-to-DOCX en formato UMD para máxima compatibilidad -->
+    <script src="https://unpkg.com/html-to-docx@2.4.0/dist/html-to-docx.umd.js"></script>
 
     <script>
         // Declaración de variables globales
@@ -550,27 +546,36 @@
             
             saveBtn.addEventListener('click', () => toggleSaveModal(true));
             
-            confirmSaveBtn.addEventListener('click', () => {
+            confirmSaveBtn.addEventListener('click', async () => {
                 const filenameInput = document.getElementById('filename');
                 const filename = filenameInput.value || 'documento';
                 
                 if (document.getElementById('format-docx').checked) {
-                  // 1) Asegúrate de que la vista que el usuario ve esté rendereada
+                  // 1) Asegurarse de que la librería está cargada
+                  if (typeof htmlToDocx === 'undefined') {
+                    alert('La función para exportar a DOCX no está lista. Inténtalo de nuevo en unos segundos.');
+                    console.error("htmlToDocx no está definido. La librería no se ha cargado.");
+                    return;
+                  }
+
+                  // 2) Asegurarse de que la vista que el usuario ve esté rendereada
                   updateHtml();
 
-                  // 2) Fuente HTML­: si el usuario está en modo código usa CodeMirror,
+                  // 3) Fuente HTML­: si el usuario está en modo código usa CodeMirror,
                   //    si no, usa el DOM de la previsualización
                   const htmlSource = cmWrapper.style.display === 'block'
                     ? htmlEditor.getValue()
                     : htmlOutput.innerHTML;
 
-                  // 3) Convierte → DOCX y descarga
-                  window.htmlToDocx(htmlSource, null, { orientation: 'portrait' })
-                    .then(blob => {
-                      saveFile(filename + '.docx', blob,
-                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-                    })
-                    .catch(err => console.error('Error DOCX:', err));
+                  // 4) Convierte → DOCX y descarga
+                  try {
+                    const blob = await htmlToDocx(htmlSource, null, { orientation: 'portrait' });
+                    saveFile(filename + '.docx', blob,
+                      'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+                  } catch(err) {
+                    alert('Ha ocurrido un error al generar el fichero .docx.');
+                    console.error('Error al convertir a DOCX:', err);
+                  }
 
                   toggleSaveModal(false);
                   return;
