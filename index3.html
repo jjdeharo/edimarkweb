@@ -230,18 +230,24 @@
         </div>
     </div>
     
-<!-- Polyfill de EventEmitter (compatible navegador) -->
-<script src="events.min.js"></script>
-
-<!-- Alias que espera html-to-docx -->
-<script>
-  /* jsdelivr crea window.events; Rollup espera events__default.default */
-  window.events__default = { default: window.events.EventEmitter || window.EventEmitter };
-</script>
-
-<!-- Librería html-to-docx empaquetada para navegador -->
-<script src="html-to-docx.browser.js"></script>
-
+    <!-- 1️⃣  Shim CommonJS muy pequeño -->
+    <script>
+      window.module  = { exports: {} };
+      window.exports = window.module.exports;
+    </script>
+    
+    <!-- 2️⃣  La librería events (CommonJS) -->
+    <script src="https://cdn.jsdelivr.net/npm/events@3.3.0/events.min.js"></script>
+    
+    <!-- 3️⃣  Hacemos visible EventEmitter para Rollup -->
+    <script>
+      window.events = window.module.exports;   // <- ahora sí existe
+      delete window.module;
+      delete window.exports;
+    </script>
+    
+    <!-- 4️⃣  html-to-docx ya encuentra EventEmitter -->
+    <script src="html-to-docx.browser.js"></script>
 
     <script>
       async function exportarDocx(nombre = 'documento') {
@@ -801,7 +807,7 @@
 
               if (!markdownEditor.hasFocus()) {                   // MD SIN foco
                 markdownEditor.setCursor(
-                  Math.round(ratio * (markdownEditor.lineCount() - 1)),
+                  Math.round(ratio * (htmlEditor.lineCount() - 1)),
                   0
                 );
               }
