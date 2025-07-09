@@ -48,8 +48,8 @@
     <!-- DOCX → HTML -->
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.4.17/mammoth.browser.min.js" defer></script>
 
-    <!-- HTML → DOCX -->
-    <script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.js" defer></script>
+    <!-- HTML → DOCX sin altChunk -->
+    <script src="https://cdn.jsdelivr.net/npm/html-to-docx@1.3.0/dist/html-to-docx.min.js" defer></script>
 
     <style>
         /* Estilos personalizados */
@@ -551,18 +551,25 @@
                 const filename = filenameInput.value || 'documento';
                 
                 if (document.getElementById('format-docx').checked) {
-                  // Asegúrate de que la vista previa esté actualizada.
-                  updateHtml();                     
+                  // 1) Asegúrate de que la vista que el usuario ve esté rendereada
+                  updateHtml();
 
-                  const fullHtml =
-                    '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>' +
-                    htmlOutput.innerHTML + '</body></html>';
+                  // 2) Fuente HTML­: si el usuario está en modo código usa CodeMirror,
+                  //    si no, usa el DOM de la previsualización
+                  const htmlSource = cmWrapper.style.display === 'block'
+                    ? htmlEditor.getValue()
+                    : htmlOutput.innerHTML;
 
-                  const blob = htmlDocx.asBlob(fullHtml);
-                  saveFile(filename + '.docx', blob,
-                           'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+                  // 3) Convierte → DOCX y descarga
+                  htmlToDocx(htmlSource, null, { orientation: 'portrait' })
+                    .then(blob => {
+                      saveFile(filename + '.docx', blob,
+                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+                    })
+                    .catch(err => console.error('Error al generar el DOCX: ' + err.message));
+
                   toggleSaveModal(false);
-                  return; // Evita que caiga en los casos MD/HTML.
+                  return;
                 }
                 
                 if (document.getElementById('format-md').checked) {
