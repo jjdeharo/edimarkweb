@@ -20,62 +20,53 @@
     <!-- Lucide Icons -->
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.523.0/dist/umd/lucide.min.js" defer></script>
     
-    <!-- CodeMirror para el resaltado de sintaxis del código HTML -->
+    <!-- CodeMirror: base y tema claro -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/neat.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/eclipse.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.js" defer></script>
+    
+    <!-- CodeMirror: modos de lenguaje -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/mode/overlay.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/xml/xml.min.js" defer></script>
-    <!-- Scripts adicionales para el modo htmlmixed de CodeMirror -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/javascript/javascript.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/css/css.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/htmlmixed/htmlmixed.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/markdown/markdown.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/gfm/gfm.min.js" defer></script>
 
 
     <style>
         /* Estilos personalizados */
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; } /* slate-100 */
-        .editor-pane, .CodeMirror {
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        .CodeMirror {
             height: calc(100vh - 16rem);
-            border: 1px solid #e2e8f0; /* slate-200 */
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+        }
+        .CodeMirror-focused {
+            outline: none;
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4) !important;
+        }
+        .editor-pane {
+            height: calc(100vh - 16rem);
+            border: 1px solid #e2e8f0;
             border-radius: 0.5rem;
             padding: 1rem;
             overflow-y: auto;
             background-color: #ffffff;
-            transition: box-shadow 0.2s, border-color 0.2s;
         }
-        .editor-pane:focus-within, .editor-pane:focus, .CodeMirror-focused {
-            outline: none;
-            border-color: #3b82f6 !important; /* blue-500 */
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4) !important;
-        }
-        /* Ajuste de altura para CodeMirror */
-        .CodeMirror { height: auto; min-height: calc(100vh - 16rem); }
-        #markdown-input { font-family: 'Fira Code', 'Courier New', monospace; font-size: 14px; line-height: 1.6; }
-        #html-output { font-family: 'Inter', sans-serif; }
         .action-btn {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem;
-            border-radius: 0.375rem;
-            color: #475569; /* slate-600 */
-            background-color: transparent;
+            display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem;
+            border-radius: 0.375rem; color: #475569; background-color: transparent;
             transition: background-color 0.2s, color 0.2s;
         }
-        .action-btn:hover {
-            background-color: #f1f5f9; /* slate-100 */
-            color: #1e293b; /* slate-800 */
-        }
+        .action-btn:hover { background-color: #f1f5f9; color: #1e293b; }
         .toolbar-btn, .copy-btn {
-            padding: 0.5rem;
-            border-radius: 0.375rem;
-            color: #475569; /* slate-600 */
+            padding: 0.5rem; border-radius: 0.375rem; color: #475569;
             transition: background-color 0.2s, color 0.2s;
         }
-        .toolbar-btn:hover, .copy-btn:hover {
-            background-color: #e2e8f0; /* slate-200 */
-            color: #1e293b; /* slate-800 */
-        }
+        .toolbar-btn:hover, .copy-btn:hover { background-color: #e2e8f0; color: #1e293b; }
     </style>
 </head>
 <body class="p-4 sm:p-6 md:p-8">
@@ -95,8 +86,8 @@
     <div class="p-4">
         <!-- Barra de herramientas de formato -->
         <div id="toolbar" class="bg-slate-50 p-2 rounded-lg mb-4 flex flex-wrap items-center gap-2 border border-slate-200">
-            <!-- Grupo 1: Formato básico -->
-            <div class="flex items-center gap-1">
+            <!-- Los botones de la barra de herramientas siguen aquí... -->
+             <div class="flex items-center gap-1">
                 <button class="toolbar-btn" data-format="bold" title="Negrita"><i data-lucide="bold"></i></button>
                 <button class="toolbar-btn" data-format="italic" title="Cursiva"><i data-lucide="italic"></i></button>
                 <div class="relative" id="heading-dropdown-container">
@@ -110,14 +101,12 @@
                 </div>
             </div>
             <div class="border-l h-6 border-slate-300"></div>
-            <!-- Grupo 2: Bloques -->
             <div class="flex items-center gap-1">
                 <button class="toolbar-btn" data-format="quote" title="Cita"><i data-lucide="quote"></i></button>
                 <button class="toolbar-btn" data-format="list-ul" title="Lista"><i data-lucide="list"></i></button>
                 <button class="toolbar-btn" data-format="list-ol" title="Lista numerada"><i data-lucide="list-ordered"></i></button>
             </div>
             <div class="border-l h-6 border-slate-300"></div>
-            <!-- Grupo 3: Inserciones -->
             <div class="flex items-center gap-1">
                 <button class="toolbar-btn" data-format="code" title="Código"><i data-lucide="code-2"></i></button>
                 <button class="toolbar-btn" data-format="link" title="Enlace"><i data-lucide="link"></i></button>
@@ -125,7 +114,6 @@
                 <button class="toolbar-btn" data-format="table" title="Tabla"><i data-lucide="table"></i></button>
             </div>
             <div class="border-l h-6 border-slate-300"></div>
-            <!-- Grupo 4: LaTeX -->
             <div class="flex items-center gap-1">
                 <button class="toolbar-btn" data-format="latex-inline" title="Fórmula LaTeX (en línea)"><i data-lucide="sigma"></i></button>
                 <button class="toolbar-btn" data-format="latex-block" title="Fórmula LaTeX (bloque)"><i data-lucide="function-square"></i></button>
@@ -139,7 +127,7 @@
                     <h2 class="text-lg font-medium text-slate-700">Markdown</h2>
                     <button id="copy-md-btn" class="copy-btn" title="Copiar Markdown"><i data-lucide="copy"></i></button>
                 </div>
-                <textarea id="markdown-input" class="editor-pane w-full"></textarea>
+                <textarea id="markdown-input"></textarea>
             </div>
             <div>
                 <div class="flex justify-between items-center mb-2">
@@ -210,7 +198,7 @@
         // Declaración de variables globales
         let turndownService;
         let isUpdating = false;
-        let htmlEditor;
+        let markdownEditor, htmlEditor;
 
         const initialContent = `# Manual rápido de EdiMarkWeb
 
@@ -220,7 +208,6 @@
 
 La barra de herramientas superior te permite aplicar formato a tu texto de forma rápida. Simplemente selecciona el texto que quieres formatear (o coloca el cursor donde quieras insertar el elemento) y haz clic en el botón correspondiente.
 
-Puedes añadir:
 - **Negrita** y *cursiva*.
 - Títulos de varios niveles.
 - Citas, listas y código.
@@ -239,49 +226,22 @@ Para fórmulas más grandes, usa bloques dedicados. Por ejemplo, la fórmula par
 \\[
 x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}
 \\]
-
-También puedes escribir sistemas de ecuaciones:
-\\[
-\\begin{cases}
-3x + 5y = 2 \\\\
-5x + 8y = 3
-\\end{cases}
-\\]
-
-O matrices complejas:
-\\[
-A = \\begin{pmatrix}
-a_{11} & a_{12} & \\cdots & a_{1n} \\\\
-a_{21} & a_{22} & \\cdots & a_{2n} \\\\
-\\vdots & \\vdots & \\ddots & \\vdots \\\\
-a_{m1} & a_{m2} & \\cdots & a_{mn}
-\\end{pmatrix}
-\\]
-
-## Edición bidireccional
-
-Lo que escribas en el panel de **Markdown** se reflejará instantáneamente en la **Previsualización**. Además, ¡puedes editar directamente en la previsualización y los cambios se convertirán a Markdown!
 `;
 
         // --- Funciones principales ---
         function updateHtml() {
             if (isUpdating) return;
             isUpdating = true;
-            const markdownInput = document.getElementById('markdown-input');
+            const markdownText = markdownEditor.getValue();
             const htmlOutput = document.getElementById('html-output');
             
-            let markdownText = markdownInput.value;
-            markdownText = markdownText.replace(/\\\\/g, '\\\\\\\\');
-            markdownText = markdownText.replace(/\\\[/g, '\\\\[').replace(/\\\]/g, '\\\\]');
-            markdownText = markdownText.replace(/\\\(/g, '\\\\(').replace(/\\\)/g, '\\\\)');
+            const sanitizedText = markdownText.replace(/\\\\/g, '\\\\\\\\').replace(/\\\[/g, '\\\\[').replace(/\\\]/g, '\\\\]').replace(/\\\(/g, '\\\\(').replace(/\\\)/g, '\\\\)');
             
             if (window.marked) {
-                const rawHtml = marked.parse(markdownText);
+                const rawHtml = marked.parse(sanitizedText);
                 htmlOutput.innerHTML = rawHtml;
-                if (htmlEditor) {
-                    const cursorPos = htmlEditor.getCursor();
+                if (htmlEditor && !htmlEditor.hasFocus()) {
                     htmlEditor.setValue(rawHtml);
-                    htmlEditor.setCursor(cursorPos);
                 }
             }
 
@@ -301,19 +261,15 @@ Lo que escribas en el panel de **Markdown** se reflejará instantáneamente en l
         function updateMarkdown() {
             if (isUpdating) return;
             isUpdating = true;
-            const markdownInput = document.getElementById('markdown-input');
             const htmlOutput = document.getElementById('html-output');
-            if (turndownService) {
-                markdownInput.value = turndownService.turndown(htmlOutput.innerHTML);
+            if (turndownService && !markdownEditor.hasFocus()) {
+                markdownEditor.setValue(turndownService.turndown(htmlOutput.innerHTML));
             }
             isUpdating = false;
         }
 
         function applyFormat(format) {
-            const markdownInput = document.getElementById('markdown-input');
-            const start = markdownInput.selectionStart;
-            const end = markdownInput.selectionEnd;
-            const selectedText = markdownInput.value.substring(start, end);
+            const selectedText = markdownEditor.getSelection();
             let newText = '';
             switch (format) {
                 case 'bold': newText = `**${selectedText || 'texto en negrita'}**`; break;
@@ -332,18 +288,12 @@ Lo que escribas en el panel de **Markdown** se reflejará instantáneamente en l
                 case 'latex-inline': newText = `$${selectedText || 'E=mc^2'}$`; break;
                 case 'latex-block': newText = `\n\\[\n${selectedText || 'f(x) = x^2'}\n\\]\n`; break;
             }
-            markdownInput.setRangeText(newText, start, end, 'select');
-            markdownInput.focus();
-            updateHtml();
+            markdownEditor.replaceSelection(newText);
+            markdownEditor.focus();
         }
 
-        function toggleTableModal(show) {
-            document.getElementById('table-modal-overlay').style.display = show ? 'flex' : 'none';
-        }
-
-        function toggleSaveModal(show) {
-            document.getElementById('save-modal-overlay').style.display = show ? 'flex' : 'none';
-        }
+        function toggleTableModal(show) { document.getElementById('table-modal-overlay').style.display = show ? 'flex' : 'none'; }
+        function toggleSaveModal(show) { document.getElementById('save-modal-overlay').style.display = show ? 'flex' : 'none'; }
         
         function saveFile(filename, content, type) {
             const blob = new Blob([content], { type });
@@ -358,44 +308,22 @@ Lo que escribas en el panel de **Markdown** se reflejará instantáneamente en l
 
         function copyToClipboard(text, btn) {
             const originalIcon = btn.innerHTML;
-            const tempTextArea = document.createElement('textarea');
-            tempTextArea.style.position = 'fixed';
-            tempTextArea.style.top = '-9999px';
-            tempTextArea.style.left = '-9999px';
-            tempTextArea.value = text;
-            document.body.appendChild(tempTextArea);
-            tempTextArea.focus();
-            tempTextArea.select();
-
-            try {
-                const successful = document.execCommand('copy');
-                if (successful) {
-                    btn.innerHTML = '<i data-lucide="check" class="text-green-500"></i>';
-                } else {
-                    btn.innerHTML = '<i data-lucide="x" class="text-red-500"></i>';
-                }
-            } catch (err) {
-                console.error('Error al intentar copiar:', err);
+            navigator.clipboard.writeText(text).then(() => {
+                btn.innerHTML = '<i data-lucide="check" class="text-green-500"></i>';
+                if (window.lucide) lucide.createIcons();
+            }).catch(err => {
+                console.error('Error al copiar:', err);
                 btn.innerHTML = '<i data-lucide="x" class="text-red-500"></i>';
-            }
-
-            document.body.removeChild(tempTextArea);
-            if (window.lucide) {
-                lucide.createIcons();
-            }
-            
-            setTimeout(() => {
-                btn.innerHTML = originalIcon;
-                if (window.lucide) {
-                    lucide.createIcons();
-                }
-            }, 2000);
+                if (window.lucide) lucide.createIcons();
+            }).finally(() => {
+                setTimeout(() => {
+                    btn.innerHTML = originalIcon;
+                    if (window.lucide) lucide.createIcons();
+                }, 2000);
+            });
         }
 
-        // Carga inicial
         window.onload = () => {
-            // Inicialización de elementos del DOM
-            const markdownInput = document.getElementById('markdown-input');
             const htmlOutput = document.getElementById('html-output');
             const viewToggleBtn = document.getElementById('view-toggle-btn');
             const htmlPanelTitle = document.getElementById('html-panel-title');
@@ -417,34 +345,29 @@ Lo que escribas en el panel de **Markdown** se reflejará instantáneamente en l
             const headingOptions = document.getElementById('heading-options');
             const headingDropdownContainer = document.getElementById('heading-dropdown-container');
 
-            // Inicialización de librerías
             if (window.TurndownService) {
                 turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
             }
 
-            // Inicialización de CodeMirror
+            markdownEditor = CodeMirror.fromTextArea(document.getElementById('markdown-input'), {
+                mode: 'gfm', theme: 'eclipse', lineNumbers: true,
+                lineWrapping: true, autofocus: true
+            });
+
             htmlEditor = CodeMirror.fromTextArea(document.getElementById('html-source-view'), {
-                mode: 'htmlmixed',
-                theme: 'neat',
-                lineNumbers: true,
-                lineWrapping: true,
+                mode: 'htmlmixed', theme: 'eclipse', lineNumbers: true, lineWrapping: true
             });
             const cmWrapper = htmlEditor.getWrapperElement();
             cmWrapper.style.display = 'none';
 
-            // Sincronizar cambios desde CodeMirror hacia la previsualización/markdown
+            markdownEditor.on('change', updateHtml);
             htmlEditor.on('change', (instance) => {
-                if (htmlEditor.hasFocus()) { // Solo actualizar si el cambio se origina en CodeMirror
-                    if (isUpdating) return;
-                    isUpdating = true;
-                    htmlOutput.innerHTML = instance.getValue();
-                    updateMarkdown();
-                    isUpdating = false;
-                }
+                if (isUpdating || !htmlEditor.hasFocus()) return;
+                isUpdating = true;
+                htmlOutput.innerHTML = instance.getValue();
+                updateMarkdown();
+                isUpdating = false;
             });
-
-            // Asignación de eventos
-            markdownInput.addEventListener('input', updateHtml);
             htmlOutput.addEventListener('input', updateMarkdown);
 
             toolbar.addEventListener('click', (e) => {
@@ -456,7 +379,7 @@ Lo que escribas en el panel de **Markdown** se reflejará instantáneamente en l
                     }
                 }
             });
-
+            
             headingBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 headingOptions.classList.toggle('hidden');
@@ -470,44 +393,27 @@ Lo que escribas en el panel de **Markdown** se reflejará instantáneamente en l
 
             viewToggleBtn.addEventListener('click', () => {
                 const isPreviewVisible = htmlOutput.style.display !== 'none';
-                
                 if (isPreviewVisible) {
-                    // Cambiar a vista de Código
                     htmlOutput.style.display = 'none';
                     cmWrapper.style.display = 'block';
-                    htmlEditor.setValue(htmlOutput.innerHTML);
                     setTimeout(() => htmlEditor.refresh(), 1);
                     htmlPanelTitle.textContent = 'Código HTML';
                     viewToggleBtn.title = 'Cambiar a previsualización';
                     viewToggleBtn.innerHTML = '<i data-lucide="eye"></i>';
                 } else {
-                    // Cambiar a vista de Previsualización
                     cmWrapper.style.display = 'none';
                     htmlOutput.style.display = 'block';
                     htmlPanelTitle.textContent = 'Previsualización';
                     viewToggleBtn.title = 'Cambiar a vista de código';
                     viewToggleBtn.innerHTML = '<i data-lucide="code-2"></i>';
                 }
-                if (window.lucide) {
-                    lucide.createIcons();
-                }
+                if (window.lucide) lucide.createIcons();
             });
-
-            htmlOutput.addEventListener('click', (e) => {
-                const link = e.target.closest('a');
-                if (link && link.href) {
-                    if (!e.ctrlKey && !e.metaKey) {
-                        e.preventDefault();
-                        window.open(link.href, '_blank', 'noopener,noreferrer');
-                    }
-                }
-            });
-
+            
             createTableBtn.addEventListener('click', () => {
                 const cols = parseInt(document.getElementById('table-cols').value, 10) || 2;
                 const rows = parseInt(document.getElementById('table-rows').value, 10) || 1;
-                let tableMd = '\n';
-                tableMd += '|';
+                let tableMd = '\n|';
                 for (let i = 1; i <= cols; i++) { tableMd += ` Cabecera ${i} |`; }
                 tableMd += '\n|';
                 for (let i = 0; i < cols; i++) { tableMd += '------------|'; }
@@ -517,15 +423,12 @@ Lo que escribas en el panel de **Markdown** se reflejará instantáneamente en l
                     for (let c = 0; c < cols; c++) { tableMd += ' Celda      |'; }
                     tableMd += '\n';
                 }
-                const start = markdownInput.selectionStart;
-                const end = markdownInput.selectionEnd;
-                markdownInput.setRangeText(tableMd, start, end, 'end');
+                markdownEditor.replaceSelection(tableMd);
                 toggleTableModal(false);
-                markdownInput.focus();
-                updateHtml();
+                markdownEditor.focus();
             });
             cancelTableBtn.addEventListener('click', () => toggleTableModal(false));
-            tableModalOverlay.addEventListener('click', (e) => { if (e.target === tableModalOverlay) { toggleTableModal(false); } });
+            tableModalOverlay.addEventListener('click', (e) => { if (e.target === tableModalOverlay) toggleTableModal(false); });
             
             saveBtn.addEventListener('click', () => toggleSaveModal(true));
             confirmSaveBtn.addEventListener('click', () => {
@@ -534,7 +437,7 @@ Lo que escribas en el panel de **Markdown** se reflejará instantáneamente en l
                 const isMd = document.getElementById('format-md').checked;
 
                 if (isMd) {
-                    saveFile(`${filename}.md`, markdownInput.value, 'text/markdown;charset=utf-8');
+                    saveFile(`${filename}.md`, markdownEditor.getValue(), 'text/markdown;charset=utf-8');
                 } else {
                     const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"></head><body class="prose">${htmlOutput.innerHTML}</body></html>`;
                     saveFile(`${filename}.html`, htmlContent, 'text/html;charset=utf-8');
@@ -542,7 +445,7 @@ Lo que escribas en el panel de **Markdown** se reflejará instantáneamente en l
                 toggleSaveModal(false);
             });
             cancelSaveBtn.addEventListener('click', () => toggleSaveModal(false));
-            saveModalOverlay.addEventListener('click', (e) => { if (e.target === saveModalOverlay) { toggleSaveModal(false); } });
+            saveModalOverlay.addEventListener('click', (e) => { if (e.target === saveModalOverlay) toggleSaveModal(false); });
 
             openFileBtn.addEventListener('click', () => fileInput.click());
             fileInput.addEventListener('change', (event) => {
@@ -554,41 +457,31 @@ Lo que escribas en el panel de **Markdown** se reflejará instantáneamente en l
                         htmlOutput.innerHTML = e.target.result; 
                         updateMarkdown(); 
                     } else { 
-                        markdownInput.value = e.target.result; 
-                        updateHtml(); 
+                        markdownEditor.setValue(e.target.result); 
                     }
                 };
                 reader.readAsText(file);
                 fileInput.value = '';
             });
             
-            copyMdBtn.addEventListener('click', () => copyToClipboard(markdownInput.value, copyMdBtn));
+            copyMdBtn.addEventListener('click', () => copyToClipboard(markdownEditor.getValue(), copyMdBtn));
             copyHtmlBtn.addEventListener('click', () => copyToClipboard(htmlEditor.getValue(), copyHtmlBtn));
             
             printBtn.addEventListener('click', () => {
                 const printContent = document.getElementById('html-output').innerHTML;
                 const iframe = document.createElement('iframe');
-                iframe.style.position = 'absolute';
-                iframe.style.width = '0';
-                iframe.style.height = '0';
-                iframe.style.border = '0';
+                iframe.style.position = 'absolute'; iframe.style.width = '0';
+                iframe.style.height = '0'; iframe.style.border = '0';
                 document.body.appendChild(iframe);
 
                 const doc = iframe.contentWindow.document;
                 doc.open();
                 doc.write(`
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <title>Imprimir</title>
-                        <script src="https://cdn.tailwindcss.com?plugins=typography"><\/script>
-                        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-                        <style>body { margin: 1.5rem; -webkit-print-color-adjust: exact; print-color-adjust: exact; }</style>
-                    </head>
-                    <body class="prose max-w-none">
-                        ${printContent}
-                    </body>
-                    </html>
+                    <!DOCTYPE html><html><head><title>Imprimir</title>
+                    <script src="https://cdn.tailwindcss.com?plugins=typography"><\/script>
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+                    <style>body { margin: 1.5rem; -webkit-print-color-adjust: exact; print-color-adjust: exact; }</style>
+                    </head><body class="prose max-w-none">${printContent}</body></html>
                 `);
                 doc.close();
 
@@ -600,17 +493,14 @@ Lo que escribas en el panel de **Markdown** se reflejará instantáneamente en l
             });
 
             clearAllBtn.addEventListener('click', () => {
-                markdownInput.value = '';
-                updateHtml();
+                markdownEditor.setValue('');
+                markdownEditor.focus();
             });
 
-            // Carga final
-            if (window.lucide) {
-                lucide.createIcons();
-            }
-            markdownInput.value = initialContent;
+            if (window.lucide) lucide.createIcons();
+            markdownEditor.setValue(initialContent);
             updateHtml();
-            markdownInput.focus();
+            markdownEditor.focus();
         };
     </script>
 </body>
