@@ -48,9 +48,6 @@
     <!-- DOCX → HTML -->
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.4.17/mammoth.browser.min.js" defer></script>
 
-    <!-- HTML → DOCX sin altChunk -->
-    <script src="https://cdn.jsdelivr.net/npm/html-to-docx@1.3.0/dist/html-to-docx.min.js" defer></script>
-
     <style>
         /* Estilos personalizados */
         body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
@@ -232,6 +229,13 @@
             </div>
         </div>
     </div>
+
+    <!-- html-to-docx en formato ESM y compatible con navegador -->
+    <script type="module">
+      import htmlToDocx from "https://cdn.jsdelivr.net/npm/html-to-docx@^2/+esm";
+      // lo exponemos para que el resto del código (no-módulo) lo pueda usar
+      window.htmlToDocx = htmlToDocx;
+    </script>
 
     <script>
         // Declaración de variables globales
@@ -561,12 +565,12 @@
                     : htmlOutput.innerHTML;
 
                   // 3) Convierte → DOCX y descarga
-                  htmlToDocx(htmlSource, null, { orientation: 'portrait' })
+                  window.htmlToDocx(htmlSource, null, { orientation: 'portrait' })
                     .then(blob => {
                       saveFile(filename + '.docx', blob,
                         'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
                     })
-                    .catch(err => console.error('Error al generar el DOCX: ' + err.message));
+                    .catch(err => console.error('Error DOCX:', err));
 
                   toggleSaveModal(false);
                   return;
