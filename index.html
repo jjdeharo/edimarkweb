@@ -25,7 +25,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/eclipse.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.js" defer></script>
     
-    <!-- CodeMirror: modos de lenguaje -->
+    <!-- CodeMirror: modos de lenguaje y addons -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/mode/overlay.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/xml/xml.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/javascript/javascript.min.js" defer></script>
@@ -34,11 +34,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/markdown/markdown.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/gfm/gfm.min.js" defer></script>
 
+    <!-- Split.js para paneles redimensionables -->
+    <script src="https://cdn.jsdelivr.net/npm/split.js/dist/split.min.js"></script>
+
 
     <style>
         /* Estilos personalizados */
         body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
-        .CodeMirror {
+        .editor-wrapper { display: flex; }
+        .panel { min-width: 280px; }
+        .CodeMirror, .editor-pane {
             height: calc(100vh - 16rem);
             border: 1px solid #e2e8f0;
             border-radius: 0.5rem;
@@ -48,14 +53,7 @@
             border-color: #3b82f6 !important;
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4) !important;
         }
-        .editor-pane {
-            height: calc(100vh - 16rem);
-            border: 1px solid #e2e8f0;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            overflow-y: auto;
-            background-color: #ffffff;
-        }
+        .editor-pane { padding: 1rem; overflow-y: auto; background-color: #ffffff; }
         .action-btn {
             display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem;
             border-radius: 0.375rem; color: #475569; background-color: transparent;
@@ -67,6 +65,8 @@
             transition: background-color 0.2s, color 0.2s;
         }
         .toolbar-btn:hover, .copy-btn:hover { background-color: #e2e8f0; color: #1e293b; }
+        .gutter { background-color: #f1f5f9; background-repeat: no-repeat; background-position: 50%; }
+        .gutter.gutter-horizontal { cursor: col-resize; background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxl79uzZDCADgEYDAB0AowCgKADlHw4hA2g+ADoApxt/9k+AAAAAElFTkSuQmCC'); }
     </style>
 </head>
 <body class="p-4 sm:p-6 md:p-8">
@@ -77,8 +77,8 @@
         <div class="flex items-center gap-1 sm:gap-2">
             <button id="open-file-btn" class="action-btn" title="Abrir archivo"><i data-lucide="folder-open" class="text-blue-600"></i><span class="hidden sm:inline">Abrir</span></button>
             <input type="file" id="file-input" class="hidden" accept=".md,.txt,.html">
-            <button id="save-btn" class="action-btn" title="Guardar archivo"><i data-lucide="save" class="text-green-600"></i><span class="hidden sm:inline">Guardar</span></button>
-            <button id="print-btn" class="action-btn" title="Imprimir"><i data-lucide="printer" class="text-slate-600"></i></button>
+            <button id="save-btn" class="action-btn" title="Guardar archivo (Ctrl+S)"><i data-lucide="save" class="text-green-600"></i><span class="hidden sm:inline">Guardar</span></button>
+            <button id="print-btn" class="action-btn" title="Imprimir (Ctrl+P)"><i data-lucide="printer" class="text-slate-600"></i></button>
             <button id="clear-all-btn" class="action-btn" title="Borrar todo"><i data-lucide="trash-2" class="text-red-600"></i></button>
         </div>
     </header>
@@ -86,10 +86,9 @@
     <div class="p-4">
         <!-- Barra de herramientas de formato -->
         <div id="toolbar" class="bg-slate-50 p-2 rounded-lg mb-4 flex flex-wrap items-center gap-2 border border-slate-200">
-            <!-- Los botones de la barra de herramientas siguen aquí... -->
              <div class="flex items-center gap-1">
-                <button class="toolbar-btn" data-format="bold" title="Negrita"><i data-lucide="bold"></i></button>
-                <button class="toolbar-btn" data-format="italic" title="Cursiva"><i data-lucide="italic"></i></button>
+                <button class="toolbar-btn" data-format="bold" title="Negrita (Ctrl+B)"><i data-lucide="bold"></i></button>
+                <button class="toolbar-btn" data-format="italic" title="Cursiva (Ctrl+I)"><i data-lucide="italic"></i></button>
                 <div class="relative" id="heading-dropdown-container">
                     <button id="heading-btn" class="toolbar-btn" title="Encabezado"><i data-lucide="heading-1"></i></button>
                     <div id="heading-options" class="absolute z-10 -left-2 mt-2 w-40 bg-white rounded-md shadow-lg border border-slate-200 hidden">
@@ -121,15 +120,15 @@
         </div>
 
         <!-- Paneles del editor -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+        <div id="editor-container" class="editor-wrapper">
+            <div id="markdown-panel" class="panel w-1/2">
                 <div class="flex justify-between items-center mb-2">
                     <h2 class="text-lg font-medium text-slate-700">Markdown</h2>
                     <button id="copy-md-btn" class="copy-btn" title="Copiar Markdown"><i data-lucide="copy"></i></button>
                 </div>
                 <textarea id="markdown-input"></textarea>
             </div>
-            <div>
+            <div id="html-panel" class="panel w-1/2">
                 <div class="flex justify-between items-center mb-2">
                     <h2 id="html-panel-title" class="text-lg font-medium text-slate-700">Previsualización</h2>
                     <div class="flex items-center gap-2">
@@ -199,6 +198,8 @@
         let turndownService;
         let isUpdating = false;
         let markdownEditor, htmlEditor;
+        const AUTOSAVE_KEY = 'edimarkweb-autosave';
+        let lastSaved = '';
 
         const initialContent = `# Manual rápido de EdiMarkWeb
 
@@ -360,6 +361,28 @@ x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}
             const cmWrapper = htmlEditor.getWrapperElement();
             cmWrapper.style.display = 'none';
 
+            Split(['#markdown-panel', '#html-panel'], {
+                sizes: [50, 50],
+                minSize: 280,
+                gutterSize: 8,
+                onDrag: () => {
+                    markdownEditor.refresh();
+                    htmlEditor.refresh();
+                }
+            });
+
+            const savedContent = localStorage.getItem(AUTOSAVE_KEY);
+            if (savedContent) {
+                markdownEditor.setValue(savedContent);
+            } else {
+                markdownEditor.setValue(initialContent);
+            }
+            lastSaved = markdownEditor.getValue();
+            
+            setInterval(() => {
+                localStorage.setItem(AUTOSAVE_KEY, markdownEditor.getValue());
+            }, 5000);
+
             markdownEditor.on('change', updateHtml);
             htmlEditor.on('change', (instance) => {
                 if (isUpdating || !htmlEditor.hasFocus()) return;
@@ -442,6 +465,8 @@ x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}
                     const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"></head><body class="prose">${htmlOutput.innerHTML}</body></html>`;
                     saveFile(`${filename}.html`, htmlContent, 'text/html;charset=utf-8');
                 }
+                lastSaved = markdownEditor.getValue();
+                localStorage.removeItem(AUTOSAVE_KEY);
                 toggleSaveModal(false);
             });
             cancelSaveBtn.addEventListener('click', () => toggleSaveModal(false));
@@ -459,6 +484,7 @@ x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}
                     } else { 
                         markdownEditor.setValue(e.target.result); 
                     }
+                    lastSaved = markdownEditor.getValue();
                 };
                 reader.readAsText(file);
                 fileInput.value = '';
@@ -494,11 +520,44 @@ x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}
 
             clearAllBtn.addEventListener('click', () => {
                 markdownEditor.setValue('');
+                lastSaved = '';
                 markdownEditor.focus();
             });
 
+            window.addEventListener('beforeunload', (e) => {
+                if (markdownEditor.getValue() !== lastSaved) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                const isMac = navigator.platform.includes('Mac');
+                const accel = isMac ? e.metaKey : e.ctrlKey;
+
+                if (!accel) return;
+
+                switch (e.key.toLowerCase()) {
+                    case 'b':
+                    e.preventDefault();
+                    applyFormat('bold');
+                    break;
+                    case 'i':
+                    e.preventDefault();
+                    applyFormat('italic');
+                    break;
+                    case 's':
+                    e.preventDefault();
+                    toggleSaveModal(true);
+                    break;
+                    case 'p':
+                    e.preventDefault();
+                    printBtn.click();
+                    break;
+                }
+            });
+
             if (window.lucide) lucide.createIcons();
-            markdownEditor.setValue(initialContent);
             updateHtml();
             markdownEditor.focus();
         };
