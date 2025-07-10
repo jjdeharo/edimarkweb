@@ -162,6 +162,7 @@
             <input type="file" id="file-input" class="hidden">
             <button id="save-btn" class="action-btn focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400" title="Guardar archivo (Ctrl+S)"><i data-lucide="save" class="text-green-600"></i><span class="hidden sm:inline">Guardar</span></button>
             <button id="print-btn" class="action-btn focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400" title="Imprimir (Ctrl+P)"><i data-lucide="printer" class="text-slate-600 dark:text-slate-400"></i></button>
+            <button id="help-btn" class="action-btn focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400" title="Manual de uso (Ctrl+H)" aria-label="Abrir manual"><i data-lucide="help-circle"></i></button>
             <button id="clear-all-btn" class="action-btn focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400" title="Borrar todo"><i data-lucide="trash-2" class="text-red-600"></i></button>
         </div>
     </header>
@@ -485,6 +486,35 @@
                 tab.classList.toggle('hidden', !isDirty);
             }
         }
+        
+        function openManualDoc(forceReload = false) {
+            const manualDoc = docs.find(d => d.name === 'Manual');
+            
+            if (manualDoc && !forceReload) {
+                switchTo(manualDoc.id);
+                return;
+            }
+
+            fetch('https://raw.githubusercontent.com/jjdeharo/edimarkweb/main/manual.md')
+                .then(r => r.ok ? r.text() : '# Manual\n\nError: No se pudo cargar el manual.')
+                .then(md => {
+                    if (manualDoc && forceReload) {
+                        const doc = docs.find(d => d.id === manualDoc.id);
+                        doc.md = md;
+                        doc.lastSaved = md;
+                        switchTo(doc.id);
+                        updateDirtyIndicator(doc.id, false);
+                    } else {
+                        newDoc('Manual', md);
+                    }
+                })
+                .catch(err => {
+                    console.error("Error al cargar el manual:", err);
+                    if (!manualDoc) {
+                        newDoc('Manual', '# Error\n\nNo se pudo cargar el manual.');
+                    }
+                });
+        }
 
 
         // --- Funciones principales ---
@@ -701,6 +731,7 @@
             const fileInput = document.getElementById('file-input');
             const saveBtn = document.getElementById('save-btn');
             const printBtn = document.getElementById('print-btn');
+            const helpBtn = document.getElementById('help-btn');
             const clearAllBtn = document.getElementById('clear-all-btn');
             const copyMdBtn = document.getElementById('copy-md-btn');
             const copyHtmlBtn = document.getElementById('copy-html-btn');
@@ -818,12 +849,7 @@
                 });
                 switchTo(docs[0].id);
             } else {
-                fetch('https://raw.githubusercontent.com/jjdeharo/edimarkweb/refs/heads/main/manual.md')
-                    .then(response => response.ok ? response.text() : '')
-                    .then(text => {
-                        newDoc('Manual', text);
-                    })
-                    .catch(() => newDoc('Sin título'));
+                openManualDoc(); // Abre el manual si no hay otros documentos
             }
             
             setInterval(() => {
@@ -870,6 +896,7 @@
 
             // --- Eventos de los botones principales y pestañas ---
             newTabBtn.addEventListener('click', () => newDoc());
+            helpBtn.addEventListener('click', (e) => openManualDoc(e.ctrlKey || e.metaKey));
             tabBar.addEventListener('click', (e) => {
                 const tab = e.target.closest('.tab');
                 const closeBtn = e.target.closest('.tab-close');
@@ -1042,11 +1069,13 @@
                     case 's': e.preventDefault(); saveBtn.click(); break;
                     case 'p': e.preventDefault(); printBtn.click(); break;
                     case 'l': e.preventDefault(); layoutToggleBtn.click(); break;
+                    case 'h': e.preventDefault(); openManualDoc(e.shiftKey); break;
                 }
             });
 
             document.addEventListener('keyup', e => {
-                if (!((isMac && e.metaKey) || (!isMac && e.ctrlKey))) {
+                const accel = isMac ? e.metaKey : e.ctrlKey;
+                if (!accel) {
                     ctrlPressed = false;
                     if (currentHoveredLink) {
                         currentHoveredLink.classList.remove('ctrl-hover');
