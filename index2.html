@@ -529,6 +529,18 @@
             if (window.marked) {
                 const rawHtml = marked.parse(sanitizedText);
                 htmlOutput.innerHTML = rawHtml;
+
+                // Generar IDs para encabezados para enlaces internos
+                htmlOutput.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(h => {
+                  if (!h.id) {
+                    h.id = h.textContent
+                             .trim()
+                             .toLowerCase()
+                             .replace(/\s+/g,'-')
+                             .replace(/[^\w\-áéíóúüñ]/g,'');
+                  }
+                });
+
                 if (htmlEditor && !htmlEditor.hasFocus()) {
                     htmlEditor.setValue(rawHtml);
                 }
@@ -1173,9 +1185,20 @@
             htmlOutput.addEventListener('click', e => {
                 if (ctrlPressed && e.buttons === 0) {
                     const a = e.target.closest('a');
-                    if (a && a.href) {
-                        e.preventDefault();
-                        e.stopPropagation();
+                    if (!a) return;
+
+                    const href = a.getAttribute('href') || '';
+                    const isHashLink = href.startsWith('#');
+
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    if (isHashLink) {
+                        const target = htmlOutput.querySelector(href);
+                        if (target) {
+                            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    } else {
                         window.open(a.href, '_blank', 'noopener');
                     }
                 }
