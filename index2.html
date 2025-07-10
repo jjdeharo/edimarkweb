@@ -949,10 +949,62 @@
 
             copyMdBtn.addEventListener('click', () => copyToClipboard(markdownEditor.getValue(), copyMdBtn));
             copyHtmlBtn.addEventListener('click', () => copyToClipboard(htmlEditor.getValue(), copyHtmlBtn));
-            printBtn.addEventListener('click', () => { /* ... (código de impresión sin cambios) ... */ });
+            
+            // ---- manejador de impresión: NO BORRAR ----
+            printBtn.addEventListener('click', () => {
+                const printContent = document.getElementById('html-output').innerHTML;
+                const iframe = document.createElement('iframe');
+                iframe.style.position = 'fixed';
+                iframe.style.right = '0';
+                iframe.style.bottom = '0';
+                iframe.style.width = '0';
+                iframe.style.height = '0';
+                iframe.style.border = '0';
+                document.body.appendChild(iframe);
+
+                const doc = iframe.contentWindow.document;
+                doc.open();
+                doc.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                      <title>Imprimir</title>
+                      <script src="https://cdn.tailwindcss.com?plugins=typography"><\/script>
+                      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+                      <style>
+                        body { margin: 1.5rem; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                      </style>
+                    </head>
+                    <body class="prose max-w-none">${printContent}</body>
+                    </html>
+                `);
+                doc.close();
+
+                setTimeout(() => {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                    document.body.removeChild(iframe);
+                }, 400);
+            });
 
             // --- Eventos de los modales ---
-            createTableBtn.addEventListener('click', () => { /* ... (código de tabla sin cambios) ... */ });
+            createTableBtn.addEventListener('click', () => {
+                const cols = parseInt(document.getElementById('table-cols').value, 10) || 2;
+                const rows = parseInt(document.getElementById('table-rows').value, 10) || 1;
+                let tableMd = '\n|';
+                for (let i = 1; i <= cols; i++) { tableMd += ` Cabecera ${i} |`; }
+                tableMd += '\n|';
+                for (let i = 0; i < cols; i++) { tableMd += '------------|'; }
+                tableMd += '\n';
+                for (let r = 0; r < rows; r++) {
+                    tableMd += '|';
+                    for (let c = 0; c < cols; c++) { tableMd += ' Celda      |'; }
+                    tableMd += '\n';
+                }
+                markdownEditor.replaceSelection(tableMd);
+                toggleTableModal(false);
+                markdownEditor.focus();
+            });
             cancelTableBtn.addEventListener('click', () => toggleTableModal(false));
             tableModalOverlay.addEventListener('click', (e) => { if (e.target === tableModalOverlay) toggleTableModal(false); });
             
