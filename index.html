@@ -176,9 +176,9 @@
 
 
     <!-- Modales -->
-    <div id="table-modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div id="table-modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="table-modal-title">
         <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm dark:bg-slate-800">
-            <h3 class="text-lg font-bold mb-4 text-slate-800 dark:text-slate-100">Crear tabla</h3>
+            <h3 id="table-modal-title" class="text-lg font-bold mb-4 text-slate-800 dark:text-slate-100">Crear tabla</h3>
             <div class="space-y-4">
                 <div>
                     <label for="table-cols" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Columnas</label>
@@ -195,9 +195,9 @@
             </div>
         </div>
     </div>
-    <div id="save-modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div id="save-modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="save-modal-title">
         <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm dark:bg-slate-800">
-            <h3 class="text-lg font-bold mb-4 text-slate-800 dark:text-slate-100">Guardar como...</h3>
+            <h3 id="save-modal-title" class="text-lg font-bold mb-4 text-slate-800 dark:text-slate-100">Guardar como...</h3>
             <div class="space-y-4">
                 <div>
                     <label for="filename" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Nombre del archivo</label>
@@ -223,6 +223,25 @@
             </div>
         </div>
     </div>
+    <!-- NUEVO: Modal de confirmación para borrar -->
+    <div id="clear-modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="clear-modal-title">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm dark:bg-slate-800">
+            <h3 id="clear-modal-title" class="text-lg font-bold mb-4 text-slate-800 dark:text-slate-100">
+              ¿Vaciar todo el contenido?
+            </h3>
+            <p class="text-sm text-slate-700 dark:text-slate-300 mb-4">
+              Se eliminarán el documento actual y su copia automática guardada en el navegador.
+            </p>
+            <div class="mt-6 flex justify-end gap-3">
+                <button id="cancel-clear-btn" class="px-4 py-2 bg-slate-100 text-slate-800 rounded-md hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-blue-500 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">Cancelar</button>
+                <button id="confirm-clear-btn" class="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    <span>Borrar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
 
     <script>
         // Declaración de variables globales
@@ -273,8 +292,11 @@
         }
 
         function applyFormat(format) {
+            const cursor = markdownEditor.getCursor();
             const selectedText = markdownEditor.getSelection();
+            const hadSelection = !!selectedText;
             let newText = '';
+
             switch (format) {
                 case 'bold': newText = `**${selectedText || 'texto en negrita'}**`; break;
                 case 'italic': newText = `*${selectedText || 'texto en cursiva'}*`; break;
@@ -284,22 +306,28 @@
                 case 'heading-4': newText = `\n#### ${selectedText || 'Título 4'}\n`; break;
                 case 'quote': newText = `\n> ${selectedText || 'Cita'}\n`; break;
                 case 'list-ul': {
-                  if (!selectedText) { newText = '\n- '; break; }
-                  newText = selectedText
-                    .split('\n')
-                    .map(l => l.replace(/^(\s*)([-*+]|(\d+\.))\s+/, '$1').replace(/^(\s*)$/, '$1'))
-                    .map(l => l.trim() ? `- ${l}` : '')
-                    .join('\n');
+                  if (!hadSelection) {
+                    newText = '\n- ';
+                  } else {
+                    newText = selectedText
+                      .split('\n')
+                      .map(l => l.replace(/^(\s*)([-*+]|(\d+\.))\s+/, '$1').replace(/^(\s*)$/, '$1'))
+                      .map(l => l.trim() ? `- ${l}` : '')
+                      .join('\n');
+                  }
                   break;
                 }
                 case 'list-ol': {
-                  if (!selectedText) { newText = '\n1. '; break; }
-                  const lines = selectedText
-                    .split('\n')
-                    .map(l => l.replace(/^(\s*)([-*+]|(\d+\.))\s+/, '$1'));
-                  newText = lines
-                    .map((l, i) => l.trim() ? `${i + 1}. ${l}` : '')
-                    .join('\n');
+                  if (!hadSelection) {
+                    newText = '\n1. ';
+                  } else {
+                    const lines = selectedText
+                      .split('\n')
+                      .map(l => l.replace(/^(\s*)([-*+]|(\d+\.))\s+/, '$1'));
+                    newText = lines
+                      .map((l, i) => l.trim() ? `${i + 1}. ${l}` : '')
+                      .join('\n');
+                  }
                   break;
                 }
                 case 'code': newText = `\`${selectedText || 'código'}\``; break;
@@ -309,12 +337,21 @@
                 case 'latex-inline': newText = `$${selectedText || 'E=mc^2'}$`; break;
                 case 'latex-block': newText = `\n\\[\n${selectedText || 'f(x) = x^2'}\n\\]\n`; break;
             }
-            markdownEditor.replaceSelection(newText);
+            
+            markdownEditor.replaceSelection(newText, 'around');
+
+            if (!hadSelection && (format === 'list-ul' || format === 'list-ol')) {
+              const targetLine = cursor.line + 1;
+              const targetCh = newText.length - 1;
+              markdownEditor.setCursor({ line: targetLine, ch: targetCh });
+            }
+
             markdownEditor.focus();
         }
 
         function toggleTableModal(show) { document.getElementById('table-modal-overlay').style.display = show ? 'flex' : 'none'; }
         function toggleSaveModal(show) { document.getElementById('save-modal-overlay').style.display = show ? 'flex' : 'none'; }
+        function toggleClearModal(show) { document.getElementById('clear-modal-overlay').style.display = show ? 'flex' : 'none'; }
         
         function saveFile(filename, content, type) {
             const blob = new Blob([content], { type });
@@ -345,6 +382,7 @@
         }
 
         window.onload = () => {
+            // --- Obtención de elementos del DOM ---
             const htmlOutput = document.getElementById('html-output');
             const viewToggleBtn = document.getElementById('view-toggle-btn');
             const htmlPanelTitle = document.getElementById('html-panel-title');
@@ -356,17 +394,27 @@
             const clearAllBtn = document.getElementById('clear-all-btn');
             const copyMdBtn = document.getElementById('copy-md-btn');
             const copyHtmlBtn = document.getElementById('copy-html-btn');
-            const tableModalOverlay = document.getElementById('table-modal-overlay');
-            const createTableBtn = document.getElementById('create-table-btn');
-            const cancelTableBtn = document.getElementById('cancel-table-btn');
-            const saveModalOverlay = document.getElementById('save-modal-overlay');
-            const confirmSaveBtn = document.getElementById('confirm-save-btn');
-            const cancelSaveBtn = document.getElementById('cancel-save-btn');
             const headingBtn = document.getElementById('heading-btn');
             const headingOptions = document.getElementById('heading-options');
             const headingDropdownContainer = document.getElementById('heading-dropdown-container');
             const themeToggleBtn = document.getElementById('theme-toggle-btn');
+            
+            // --- Elementos de modales ---
+            const tableModalOverlay = document.getElementById('table-modal-overlay');
+            const createTableBtn = document.getElementById('create-table-btn');
+            const cancelTableBtn = document.getElementById('cancel-table-btn');
+            
+            const saveModalOverlay = document.getElementById('save-modal-overlay');
+            const confirmSaveBtn = document.getElementById('confirm-save-btn');
+            const cancelSaveBtn = document.getElementById('cancel-save-btn');
+            
+            // NUEVO: Elementos del modal de borrado
+            const clearModalOverlay = document.getElementById('clear-modal-overlay');
+            const confirmClearBtn = document.getElementById('confirm-clear-btn');
+            const cancelClearBtn = document.getElementById('cancel-clear-btn');
 
+
+            // --- Inicialización de librerías ---
             if (window.TurndownService) {
                 turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
             }
@@ -387,6 +435,7 @@
             const cmWrapper = htmlEditor.getWrapperElement();
             cmWrapper.style.display = 'none';
 
+            // --- Gestión del tema (claro/oscuro) ---
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
             const storedTheme = localStorage.getItem('theme');
 
@@ -420,6 +469,7 @@
               applyTheme(newTheme);
             });
 
+            // --- Paneles redimensionables ---
             Split(['#markdown-panel', '#html-panel'], {
                 sizes: [50, 50],
                 minSize: 280,
@@ -430,6 +480,7 @@
                 }
             });
 
+            // --- Carga inicial y autoguardado ---
             const savedContent = localStorage.getItem(AUTOSAVE_KEY);
             if (savedContent) {
                 markdownEditor.setValue(savedContent);
@@ -438,12 +489,7 @@
                 markdownEditor.focus();
             } else {
                 fetch('https://raw.githubusercontent.com/jjdeharo/edimarkweb/refs/heads/main/manual.md')
-                    .then(response => {
-                        if (!response.ok) {
-                            return Promise.resolve('');
-                        }
-                        return response.text();
-                    })
+                    .then(response => response.ok ? response.text() : Promise.resolve(''))
                     .then(text => {
                         markdownEditor.setValue(text);
                         lastSaved = text;
@@ -462,6 +508,7 @@
                 localStorage.setItem(AUTOSAVE_KEY, markdownEditor.getValue());
             }, 5000);
 
+            // --- Eventos de los editores ---
             markdownEditor.on('change', updateHtml);
             
             htmlEditor.on('change', (instance) => {
@@ -475,6 +522,7 @@
             
             htmlOutput.addEventListener('input', updateMarkdown);
 
+            // --- Eventos de la barra de herramientas ---
             toolbar.addEventListener('click', (e) => {
                 const button = e.target.closest('button');
                 if (button && button.dataset.format) {
@@ -496,6 +544,7 @@
                 }
             });
 
+            // --- Eventos de los botones principales ---
             viewToggleBtn.addEventListener('click', () => {
                 const isPreviewVisible = htmlOutput.style.display !== 'none';
                 if (isPreviewVisible) {
@@ -515,45 +564,6 @@
                 if (window.lucide) lucide.createIcons();
             });
             
-            createTableBtn.addEventListener('click', () => {
-                const cols = parseInt(document.getElementById('table-cols').value, 10) || 2;
-                const rows = parseInt(document.getElementById('table-rows').value, 10) || 1;
-                let tableMd = '\n|';
-                for (let i = 1; i <= cols; i++) { tableMd += ` Cabecera ${i} |`; }
-                tableMd += '\n|';
-                for (let i = 0; i < cols; i++) { tableMd += '------------|'; }
-                tableMd += '\n';
-                for (let r = 0; r < rows; r++) {
-                    tableMd += '|';
-                    for (let c = 0; c < cols; c++) { tableMd += ' Celda      |'; }
-                    tableMd += '\n';
-                }
-                markdownEditor.replaceSelection(tableMd);
-                toggleTableModal(false);
-                markdownEditor.focus();
-            });
-            cancelTableBtn.addEventListener('click', () => toggleTableModal(false));
-            tableModalOverlay.addEventListener('click', (e) => { if (e.target === tableModalOverlay) toggleTableModal(false); });
-            
-            saveBtn.addEventListener('click', () => toggleSaveModal(true));
-            confirmSaveBtn.addEventListener('click', () => {
-                const filenameInput = document.getElementById('filename');
-                const filename = filenameInput.value || 'documento';
-                const isMd = document.getElementById('format-md').checked;
-
-                if (isMd) {
-                    saveFile(`${filename}.md`, markdownEditor.getValue(), 'text/markdown;charset=utf-8');
-                } else {
-                    const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"></head><body class="prose">${htmlOutput.innerHTML}</body></html>`;
-                    saveFile(`${filename}.html`, htmlContent, 'text/html;charset=utf-8');
-                }
-                lastSaved = markdownEditor.getValue();
-                localStorage.removeItem(AUTOSAVE_KEY);
-                toggleSaveModal(false);
-            });
-            cancelSaveBtn.addEventListener('click', () => toggleSaveModal(false));
-            saveModalOverlay.addEventListener('click', (e) => { if (e.target === saveModalOverlay) toggleSaveModal(false); });
-
             openFileBtn.addEventListener('click', () => fileInput.click());
             fileInput.addEventListener('change', (event) => {
                 const file = event.target.files[0];
@@ -571,41 +581,9 @@
                 reader.readAsText(file);
                 fileInput.value = '';
             });
-            
+
             copyMdBtn.addEventListener('click', () => copyToClipboard(markdownEditor.getValue(), copyMdBtn));
-            
-            copyHtmlBtn.addEventListener('click', async () => {
-                const plainText = htmlEditor.getValue();
-                const richHtml = htmlOutput.innerHTML;
-                const originalIcon = copyHtmlBtn.innerHTML;
-
-                try {
-                    if (!window.ClipboardItem) {
-                        console.warn('La API ClipboardItem no es compatible. Usando método de reserva.');
-                        copyToClipboard(plainText, copyHtmlBtn); 
-                        return;
-                    }
-
-                    const item = new ClipboardItem({
-                        'text/plain': new Blob([plainText], { type: 'text/plain' }),
-                        'text/html': new Blob([richHtml], { type: 'text/html' })
-                    });
-                    await navigator.clipboard.write([item]);
-
-                    copyHtmlBtn.innerHTML = '<i data-lucide="check" class="text-green-500"></i>';
-                    if (window.lucide) lucide.createIcons();
-
-                } catch (err) {
-                    console.error('Error al copiar con la API moderna. Intentando con el método de reserva:', err);
-                    copyToClipboard(plainText, copyHtmlBtn);
-                    return; 
-                }
-
-                setTimeout(() => {
-                    copyHtmlBtn.innerHTML = originalIcon;
-                    if (window.lucide) lucide.createIcons();
-                }, 2000);
-            });
+            copyHtmlBtn.addEventListener('click', () => copyToClipboard(htmlEditor.getValue(), copyHtmlBtn));
             
             printBtn.addEventListener('click', () => {
                 const printContent = document.getElementById('html-output').innerHTML;
@@ -632,12 +610,74 @@
                 }, 500);
             });
 
-            clearAllBtn.addEventListener('click', () => {
-                markdownEditor.setValue('');
-                lastSaved = '';
+            // --- Eventos de los modales ---
+
+            // Modal de tabla
+            createTableBtn.addEventListener('click', () => {
+                const cols = parseInt(document.getElementById('table-cols').value, 10) || 2;
+                const rows = parseInt(document.getElementById('table-rows').value, 10) || 1;
+                let tableMd = '\n|';
+                for (let i = 1; i <= cols; i++) { tableMd += ` Cabecera ${i} |`; }
+                tableMd += '\n|';
+                for (let i = 0; i < cols; i++) { tableMd += '------------|'; }
+                tableMd += '\n';
+                for (let r = 0; r < rows; r++) {
+                    tableMd += '|';
+                    for (let c = 0; c < cols; c++) { tableMd += ' Celda      |'; }
+                    tableMd += '\n';
+                }
+                markdownEditor.replaceSelection(tableMd);
+                toggleTableModal(false);
                 markdownEditor.focus();
             });
+            cancelTableBtn.addEventListener('click', () => toggleTableModal(false));
+            tableModalOverlay.addEventListener('click', (e) => { if (e.target === tableModalOverlay) toggleTableModal(false); });
+            
+            // Modal de guardar
+            saveBtn.addEventListener('click', () => toggleSaveModal(true));
+            confirmSaveBtn.addEventListener('click', () => {
+                const filenameInput = document.getElementById('filename');
+                const filename = filenameInput.value || 'documento';
+                const isMd = document.getElementById('format-md').checked;
 
+                if (isMd) {
+                    saveFile(`${filename}.md`, markdownEditor.getValue(), 'text/markdown;charset=utf-8');
+                } else {
+                    const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"></head><body class="prose">${htmlOutput.innerHTML}</body></html>`;
+                    saveFile(`${filename}.html`, htmlContent, 'text/html;charset=utf-8');
+                }
+                lastSaved = markdownEditor.getValue();
+                localStorage.removeItem(AUTOSAVE_KEY);
+                toggleSaveModal(false);
+            });
+            cancelSaveBtn.addEventListener('click', () => toggleSaveModal(false));
+            saveModalOverlay.addEventListener('click', (e) => { if (e.target === saveModalOverlay) toggleSaveModal(false); });
+
+            // NUEVO: Modal de borrado
+            clearAllBtn.addEventListener('click', () => toggleClearModal(true));
+            
+            confirmClearBtn.addEventListener('click', () => {
+              // 1. Vacía los editores y la previsualización
+              markdownEditor.setValue('');
+              htmlEditor.setValue('');
+              document.getElementById('html-output').innerHTML = '';
+
+              // 2. Actualiza el estado interno
+              lastSaved = '';
+
+              // 3. Elimina el borrador almacenado
+              localStorage.removeItem(AUTOSAVE_KEY);
+
+              // 4. Cierra el modal y devuelve el foco
+              toggleClearModal(false);
+              markdownEditor.focus();
+            });
+
+            cancelClearBtn.addEventListener('click', () => toggleClearModal(false));
+            clearModalOverlay.addEventListener('click', (e) => { if (e.target === clearModalOverlay) toggleClearModal(false); });
+
+
+            // --- Atajos de teclado y otros ---
             window.addEventListener('beforeunload', (e) => {
                 if (markdownEditor.getValue() !== lastSaved) {
                     e.preventDefault();
@@ -652,22 +692,10 @@
                 if (!accel) return;
 
                 switch (e.key.toLowerCase()) {
-                    case 'b':
-                    e.preventDefault();
-                    applyFormat('bold');
-                    break;
-                    case 'i':
-                    e.preventDefault();
-                    applyFormat('italic');
-                    break;
-                    case 's':
-                    e.preventDefault();
-                    toggleSaveModal(true);
-                    break;
-                    case 'p':
-                    e.preventDefault();
-                    printBtn.click();
-                    break;
+                    case 'b': e.preventDefault(); applyFormat('bold'); break;
+                    case 'i': e.preventDefault(); applyFormat('italic'); break;
+                    case 's': e.preventDefault(); toggleSaveModal(true); break;
+                    case 'p': e.preventDefault(); printBtn.click(); break;
                 }
             });
             
@@ -681,69 +709,41 @@
                 }
             });
 
-            // --- Sincronización entre paneles ------------------------------
-            let syncLock = false;                // evita bucles infinitos
-
-            function lineRatio(editor) {
-              return editor.getCursor().line / Math.max(1, editor.lineCount() - 1);
-            }
-            function scrollRatio(el) {
-              return el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight);
-            }
+            // --- Sincronización de scroll entre paneles ---
+            let syncLock = false;
+            function lineRatio(editor) { return editor.getCursor().line / Math.max(1, editor.lineCount() - 1); }
+            function scrollRatio(el) { return el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight); }
 
             function syncFromMarkdown() {
               if (syncLock) return;
               syncLock = true;
-
               const ratio = lineRatio(markdownEditor);
-
-              if (cmWrapper.style.display === 'none') {           // modo previsualización
-                htmlOutput.scrollTop = ratio *
-                  (htmlOutput.scrollHeight - htmlOutput.clientHeight);
-              } else if (!htmlEditor.hasFocus()) {                // código HTML SIN foco
+              if (cmWrapper.style.display === 'none') {
+                htmlOutput.scrollTop = ratio * (htmlOutput.scrollHeight - htmlOutput.clientHeight);
+              } else if (!htmlEditor.hasFocus()) {
                 const scroller = htmlEditor.getScrollerElement();
-                scroller.scrollTop = ratio *
-                  (scroller.scrollHeight - scroller.clientHeight);
-                htmlEditor.setCursor(
-                  Math.round(ratio * (htmlEditor.lineCount() - 1)),
-                  0
-                );
+                scroller.scrollTop = ratio * (scroller.scrollHeight - scroller.clientHeight);
+                htmlEditor.setCursor(Math.round(ratio * (htmlEditor.lineCount() - 1)), 0);
               }
-
               syncLock = false;
             }
 
             function syncFromHtml() {
               if (syncLock) return;
               syncLock = true;
-
-              let ratio;
-              if (cmWrapper.style.display === 'none') {           // modo previsualización
-                ratio = scrollRatio(htmlOutput);
-              } else {                                            // código HTML
-                ratio = lineRatio(htmlEditor);
-              }
-
+              let ratio = (cmWrapper.style.display === 'none') ? scrollRatio(htmlOutput) : lineRatio(htmlEditor);
               const scroller = markdownEditor.getScrollerElement();
-              scroller.scrollTop = ratio *
-                (scroller.scrollHeight - scroller.clientHeight);
-
-              if (!markdownEditor.hasFocus()) {                   // MD SIN foco
-                markdownEditor.setCursor(
-                  Math.round(ratio * (markdownEditor.lineCount() - 1)),
-                  0
-                );
+              scroller.scrollTop = ratio * (scroller.scrollHeight - scroller.clientHeight);
+              if (!markdownEditor.hasFocus()) {
+                markdownEditor.setCursor(Math.round(ratio * (markdownEditor.lineCount() - 1)), 0);
               }
-
               syncLock = false;
             }
 
-            // Eventos que disparan la sincronización
-            markdownEditor.on('cursorActivity', syncFromMarkdown);   // clic o flechas en MD
-            htmlEditor.on('cursorActivity', syncFromHtml);           // clic o flechas en HTML
-            htmlOutput.addEventListener('click', syncFromHtml);      // clic en previsualización
-            htmlOutput.addEventListener('keyup', syncFromHtml);      // flechas en previsualización
-
+            markdownEditor.on('cursorActivity', syncFromMarkdown);
+            htmlEditor.on('cursorActivity', syncFromHtml);
+            htmlOutput.addEventListener('click', syncFromHtml);
+            htmlOutput.addEventListener('keyup', syncFromHtml);
         };
     </script>
 </body>
