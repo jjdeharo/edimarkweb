@@ -225,7 +225,7 @@
 
 
     <!-- Modales -->
-    <div id="table-modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="table-modal-title">
+    <div id="table-modal-overlay" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="table-modal-title">
         <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm dark:bg-slate-800">
             <h3 id="table-modal-title" class="text-lg font-bold mb-4 text-slate-800 dark:text-slate-100">Crear tabla</h3>
             <div class="space-y-4">
@@ -244,7 +244,7 @@
             </div>
         </div>
     </div>
-    <div id="save-modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="save-modal-title">
+    <div id="save-modal-overlay" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="save-modal-title">
         <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm dark:bg-slate-800">
             <h3 id="save-modal-title" class="text-lg font-bold mb-4 text-slate-800 dark:text-slate-100">Guardar como...</h3>
             <div class="space-y-4">
@@ -272,7 +272,7 @@
             </div>
         </div>
     </div>
-    <div id="clear-modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="clear-modal-title">
+    <div id="clear-modal-overlay" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="clear-modal-title">
         <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm dark:bg-slate-800">
             <h3 id="clear-modal-title" class="text-lg font-bold mb-4 text-slate-800 dark:text-slate-100">
               ¿Vaciar todo el contenido?
@@ -286,6 +286,25 @@
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                     <span>Borrar</span>
                 </button>
+            </div>
+        </div>
+    </div>
+    <div id="link-modal-overlay" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="link-modal-title">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm dark:bg-slate-800">
+            <h3 id="link-modal-title" class="text-lg font-bold mb-4 text-slate-800 dark:text-slate-100">Insertar enlace</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="link-text" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Texto a mostrar</label>
+                    <input id="link-text" type="text" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200">
+                </div>
+                <div>
+                    <label for="link-url" class="block text-sm font-medium text-slate-700 dark:text-slate-300">URL</label>
+                    <input id="link-url" type="url" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button id="cancel-link-btn" class="px-4 py-2 bg-slate-100 text-slate-800 rounded-md hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-blue-500 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">Cancelar</button>
+                <button id="insert-link-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500">Insertar</button>
             </div>
         </div>
     </div>
@@ -546,7 +565,7 @@
                   break;
                 }
                 case 'code': newText = `\`${selectedText || 'código'}\``; break;
-                case 'link': newText = `[${selectedText || 'texto del enlace'}](https://www.ejemplo.com)`; break;
+                case 'link': toggleLinkModal(true, selectedText); return;
                 case 'image': newText = `![${selectedText || 'texto alternativo'}](https://via.placeholder.com/150)`; break;
                 case 'table': toggleTableModal(true); return;
                 case 'latex-inline': newText = `$${selectedText || 'E=mc^2'}$`; break;
@@ -574,6 +593,15 @@
         }
         function toggleClearModal(show) { document.getElementById('clear-modal-overlay').style.display = show ? 'flex' : 'none'; }
         
+        function toggleLinkModal(show, presetText = '') {
+            document.getElementById('link-modal-overlay').style.display = show ? 'flex' : 'none';
+            if (show) {
+                document.getElementById('link-text').value = presetText;
+                document.getElementById('link-url').value  = '';
+                setTimeout(() => document.getElementById(presetText ? 'link-url' : 'link-text').focus(), 0);
+            }
+        }
+
         function saveFile(filename, content, type) {
             const blob = new Blob([content], { type });
             const a = document.createElement('a');
@@ -688,6 +716,10 @@
             const clearModalOverlay = document.getElementById('clear-modal-overlay');
             const confirmClearBtn = document.getElementById('confirm-clear-btn');
             const cancelClearBtn = document.getElementById('cancel-clear-btn');
+            
+            const linkModalOverlay = document.getElementById('link-modal-overlay');
+            const insertLinkBtn = document.getElementById('insert-link-btn');
+            const cancelLinkBtn = document.getElementById('cancel-link-btn');
 
 
             // --- Inicialización de librerías ---
@@ -934,6 +966,18 @@
             });
             cancelClearBtn.addEventListener('click', () => toggleClearModal(false));
             clearModalOverlay.addEventListener('click', (e) => { if (e.target === clearModalOverlay) toggleClearModal(false); });
+            
+            insertLinkBtn.addEventListener('click', () => {
+              const text = document.getElementById('link-text').value.trim() || 'enlace';
+              const url  = document.getElementById('link-url').value.trim()  || '#';
+              markdownEditor.replaceSelection(`[${text}](${url})`);
+              toggleLinkModal(false);
+              markdownEditor.focus();
+            });
+            cancelLinkBtn.addEventListener('click', () => toggleLinkModal(false));
+            linkModalOverlay.addEventListener('click', e => {
+              if (e.target === linkModalOverlay) toggleLinkModal(false);
+            });
 
             // --- Atajos de teclado y otros ---
             window.addEventListener('beforeunload', (e) => {
