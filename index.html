@@ -57,7 +57,7 @@
         .panel { min-width: 280px; }
         
         .CodeMirror, .editor-pane {
-            height: calc(100vh - 16rem);
+            height: calc(100vh - 20rem); /* Ajustado para la barra de pestañas */
             border: 1px solid #e2e8f0;
             border-radius: 0.5rem;
             font-size: var(--fs-base); /* Usa la variable CSS para el tamaño */
@@ -78,6 +78,16 @@
         .dark .prose code { color: #e2e8f0; }
         .dark .prose blockquote { border-left-color: #475569; color: #94a3b8;}
         .dark .prose a { color: #93c5fd; }
+        
+        /* Estilo para enlaces con Ctrl/Cmd presionado */
+        #html-output a.ctrl-hover {
+            text-decoration: underline;
+            color: #2563eb; /* Tailwind blue-600 */
+            cursor: pointer;
+        }
+        .dark #html-output a.ctrl-hover {
+            color: #60a5fa; /* Tailwind blue-400 */
+        }
 
 
         .action-btn {
@@ -105,6 +115,34 @@
         .gutter { background-color: #f1f5f9; background-repeat: no-repeat; background-position: 50%; }
         .dark .gutter { background-color: #0f172a; }
         .gutter.gutter-horizontal { cursor: col-resize; background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxl79uzZDCADgEYDAB0AowCgKADlHw4hA2g+ADoApxt/9k+AAAAAElFTkSuQmCC'); }
+
+        /* Estilos para pestañas */
+        .tab {
+            border: 1px solid transparent;
+            border-bottom: 1px solid #e2e8f0;
+            background-color: #f1f5f9;
+        }
+        .dark .tab {
+            border-bottom: 1px solid #334155;
+            background-color: #1e293b;
+        }
+        .tab[aria-selected="true"] {
+            background-color: white;
+            border-color: #e2e8f0;
+            border-bottom-color: transparent;
+        }
+        .dark .tab[aria-selected="true"] {
+            background-color: #0f172a;
+            border-color: #334155;
+            border-bottom-color: transparent;
+        }
+        .tab-close {
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+        .tab:hover .tab-close {
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="p-4 sm:p-6 md:p-8">
@@ -125,6 +163,7 @@
             <input type="file" id="file-input" class="hidden">
             <button id="save-btn" class="action-btn focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400" title="Guardar archivo (Ctrl+S)"><i data-lucide="save" class="text-green-600"></i><span class="hidden sm:inline">Guardar</span></button>
             <button id="print-btn" class="action-btn focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400" title="Imprimir (Ctrl+P)"><i data-lucide="printer" class="text-slate-600 dark:text-slate-400"></i></button>
+            <button id="help-btn" class="action-btn focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400" title="Manual de uso (Ctrl+H)" aria-label="Abrir manual"><i data-lucide="help-circle"></i></button>
             <button id="clear-all-btn" class="action-btn focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400" title="Borrar todo"><i data-lucide="trash-2" class="text-red-600"></i></button>
         </div>
     </header>
@@ -165,8 +204,14 @@
             </div>
         </div>
 
+        <!-- Barra de pestañas -->
+        <div class="flex items-center border-b border-slate-200 dark:border-slate-700">
+            <div id="tab-bar" role="tablist" class="flex-grow flex gap-1 overflow-x-auto"></div>
+            <button id="new-tab-btn" class="action-btn p-2" title="Nueva pestaña (Ctrl+T)"><i data-lucide="plus"></i></button>
+        </div>
+
         <!-- Paneles del editor -->
-        <div id="editor-container" class="editor-wrapper">
+        <div id="editor-container" class="editor-wrapper pt-3">
             <div id="markdown-panel" class="panel w-full md:w-1/2">
                 <div class="flex justify-between items-center mb-2">
                     <h2 class="text-lg font-medium text-slate-700 dark:text-slate-200">Markdown</h2>
@@ -191,7 +236,7 @@
 
 
     <!-- Modales -->
-    <div id="table-modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="table-modal-title">
+    <div id="table-modal-overlay" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="table-modal-title">
         <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm dark:bg-slate-800">
             <h3 id="table-modal-title" class="text-lg font-bold mb-4 text-slate-800 dark:text-slate-100">Crear tabla</h3>
             <div class="space-y-4">
@@ -210,7 +255,7 @@
             </div>
         </div>
     </div>
-    <div id="save-modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="save-modal-title">
+    <div id="save-modal-overlay" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="save-modal-title">
         <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm dark:bg-slate-800">
             <h3 id="save-modal-title" class="text-lg font-bold mb-4 text-slate-800 dark:text-slate-100">Guardar como...</h3>
             <div class="space-y-4">
@@ -238,13 +283,13 @@
             </div>
         </div>
     </div>
-    <div id="clear-modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="clear-modal-title">
+    <div id="clear-modal-overlay" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="clear-modal-title">
         <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm dark:bg-slate-800">
             <h3 id="clear-modal-title" class="text-lg font-bold mb-4 text-slate-800 dark:text-slate-100">
               ¿Vaciar todo el contenido?
             </h3>
             <p class="text-sm text-slate-700 dark:text-slate-300 mb-4">
-              Se eliminarán el documento actual y su copia automática guardada en el navegador.
+              Se eliminará el documento actual y su copia automática guardada en el navegador.
             </p>
             <div class="mt-6 flex justify-end gap-3">
                 <button id="cancel-clear-btn" class="px-4 py-2 bg-slate-100 text-slate-800 rounded-md hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-blue-500 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">Cancelar</button>
@@ -255,6 +300,25 @@
             </div>
         </div>
     </div>
+    <div id="link-modal-overlay" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="link-modal-title">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm dark:bg-slate-800">
+            <h3 id="link-modal-title" class="text-lg font-bold mb-4 text-slate-800 dark:text-slate-100">Insertar enlace</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="link-text" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Texto a mostrar</label>
+                    <input id="link-text" type="text" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200">
+                </div>
+                <div>
+                    <label for="link-url" class="block text-sm font-medium text-slate-700 dark:text-slate-300">URL</label>
+                    <input id="link-url" type="url" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button id="cancel-link-btn" class="px-4 py-2 bg-slate-100 text-slate-800 rounded-md hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-blue-500 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">Cancelar</button>
+                <button id="insert-link-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500">Insertar</button>
+            </div>
+        </div>
+    </div>
 
 
     <script>
@@ -262,11 +326,197 @@
         let turndownService;
         let isUpdating = false;
         let markdownEditor, htmlEditor;
-        const AUTOSAVE_KEY = 'edimarkweb-autosave';
+        const AUTOSAVE_KEY_PREFIX = 'edimarkweb-autosave';
+        const DOCS_LIST_KEY = 'edimarkweb-docslist';
         const LAYOUT_KEY = 'edimarkweb-layout';
         const FS_KEY = 'edimarkweb-fontsize';
-        let lastSaved = '';
+        
+        let docs = [];
+        let currentId = null;
         let currentLayout;
+
+        // --- Funciones de gestión de pestañas y documentos ---
+        function saveDocsList() {
+            const docList = docs.map(d => ({id: d.id, name: d.name}));
+            localStorage.setItem(DOCS_LIST_KEY, JSON.stringify(docList));
+        }
+
+        function startRename(tab) {
+            const tabNameSpan = tab.querySelector('.tab-name');
+            if (!tabNameSpan || tab.querySelector('input')) return;
+
+            const currentName = tabNameSpan.textContent;
+            const docId = tab.dataset.id;
+            const closeBtn = tab.querySelector('.tab-close');
+            const dirtyIndicator = tab.querySelector('.tab-dirty');
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentName;
+            input.className = 'bg-white dark:bg-slate-800 border border-blue-500 rounded px-1 text-sm w-32';
+            input.setAttribute('aria-label', 'Nuevo nombre del documento');
+
+            tabNameSpan.style.display = 'none';
+            if (closeBtn) closeBtn.style.display = 'none';
+
+            tab.insertBefore(input, dirtyIndicator);
+            input.focus();
+            input.select();
+
+            const finishRename = () => {
+                const newName = input.value.trim();
+                
+                input.removeEventListener('blur', finishRename);
+                input.removeEventListener('keydown', handleKey);
+                if (input.parentNode) input.remove();
+
+                tabNameSpan.style.display = '';
+                if (closeBtn) closeBtn.style.display = '';
+
+                if (newName && newName !== currentName) {
+                    const doc = docs.find(d => d.id === docId);
+                    if (doc) {
+                        doc.name = newName;
+                        tabNameSpan.textContent = newName;
+                        saveDocsList();
+                    }
+                }
+                tab.focus();
+            };
+
+            const handleKey = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    finishRename();
+                } else if (e.key === 'Escape') {
+                    input.value = currentName;
+                    finishRename();
+                }
+            };
+
+            input.addEventListener('blur', finishRename);
+            input.addEventListener('keydown', handleKey);
+        }
+
+        function newDoc(name = 'Sin título', md = '') {
+            const id = Date.now().toString(36) + Math.random().toString(36).substring(2);
+            const newDoc = { id, name, md, lastSaved: md };
+            docs.push(newDoc);
+            addTabElement(newDoc);
+            switchTo(id);
+            saveDocsList();
+            return newDoc;
+        }
+
+        function addTabElement({ id, name }) {
+            const tabBar = document.getElementById('tab-bar');
+            const tab = document.createElement('button');
+            tab.className = "tab px-3 py-1 rounded-t-md flex items-center gap-2 text-sm";
+            tab.dataset.id = id;
+            tab.setAttribute('role', 'tab');
+            tab.setAttribute('aria-selected', 'false');
+            tab.innerHTML = `
+                <span class="tab-name">${name}</span>
+                <span class="ml-1 text-red-500 tab-dirty hidden" title="Cambios sin guardar">●</span>
+                <i data-lucide="x" class="tab-close w-4 h-4 opacity-50 hover:opacity-100"></i>
+            `;
+            tabBar.appendChild(tab);
+            tab.addEventListener('dblclick', () => startRename(tab));
+            if(window.lucide) lucide.createIcons();
+        }
+
+        function switchTo(id) {
+            if (currentId && currentId !== id) {
+                const previousDoc = docs.find(d => d.id === currentId);
+                if (previousDoc) {
+                    previousDoc.md = markdownEditor.getValue();
+                }
+            }
+
+            currentId = id;
+            const doc = docs.find(d => d.id === id);
+            if (!doc) return;
+
+            document.querySelectorAll('.tab').forEach(t => {
+                const isActive = t.dataset.id === id;
+                t.setAttribute('aria-selected', isActive);
+                t.classList.toggle('bg-white', isActive);
+                t.classList.toggle('dark:bg-slate-900', isActive);
+                t.classList.toggle('border-slate-200', isActive);
+                t.classList.toggle('dark:border-slate-700', isActive);
+                t.classList.toggle('border-transparent', !isActive);
+            });
+
+            markdownEditor.setValue(doc.md);
+            updateHtml();
+            markdownEditor.focus();
+            updateDirtyIndicator(id, doc.md !== doc.lastSaved);
+        }
+
+        function closeDoc(id) {
+            const docIndex = docs.findIndex(d => d.id === id);
+            if (docIndex === -1) return;
+
+            const doc = docs[docIndex];
+            const isDirty = doc.md !== doc.lastSaved;
+
+            if (isDirty && !confirm(`¿Cerrar "${doc.name}" sin guardar los cambios?`)) {
+                return;
+            }
+
+            docs.splice(docIndex, 1);
+            document.querySelector(`.tab[data-id="${id}"]`).remove();
+            localStorage.removeItem(`${AUTOSAVE_KEY_PREFIX}-${id}`);
+            saveDocsList();
+
+            if (currentId === id) {
+                if (docs.length > 0) {
+                    const newIndex = Math.max(0, docIndex - 1);
+                    switchTo(docs[newIndex].id);
+                } else {
+                    currentId = null;
+                    markdownEditor.setValue('');
+                    updateHtml();
+                }
+            }
+        }
+        
+        function updateDirtyIndicator(id, isDirty) {
+            const tab = document.querySelector(`.tab[data-id="${id}"] .tab-dirty`);
+            if (tab) {
+                tab.classList.toggle('hidden', !isDirty);
+            }
+        }
+        
+        function openManualDoc(forceReload = false) {
+            const manualDoc = docs.find(d => d.name === 'Manual');
+            
+            if (manualDoc && !forceReload) {
+                switchTo(manualDoc.id);
+                return;
+            }
+
+            fetch('https://raw.githubusercontent.com/jjdeharo/edimarkweb/main/manual.md')
+                .then(r => r.ok ? r.text() : '# Manual\n\nError: No se pudo cargar el manual.')
+                .then(md => {
+                    if (manualDoc && forceReload) {
+                        const doc = docs.find(d => d.id === manualDoc.id);
+                        doc.md = md;
+                        doc.lastSaved = md;
+                        switchTo(doc.id);
+                        updateDirtyIndicator(doc.id, false);
+                    } else {
+                        newDoc('Manual', md);
+                    }
+                })
+                .catch(err => {
+                    console.error("Error al cargar el manual:", err);
+                    if (!manualDoc) {
+                        newDoc('Manual', '# Error\n\nNo se pudo cargar el manual.');
+                    }
+                });
+        }
+
 
         // --- Funciones principales ---
         function updateHtml() {
@@ -280,6 +530,18 @@
             if (window.marked) {
                 const rawHtml = marked.parse(sanitizedText);
                 htmlOutput.innerHTML = rawHtml;
+
+                // Generar IDs para encabezados para enlaces internos
+                htmlOutput.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(h => {
+                  if (!h.id) {
+                    h.id = h.textContent
+                             .trim()
+                             .toLowerCase()
+                             .replace(/\s+/g,'-')
+                             .replace(/[^\w\-áéíóúüñ]/g,'');
+                  }
+                });
+
                 if (htmlEditor && !htmlEditor.hasFocus()) {
                     htmlEditor.setValue(rawHtml);
                 }
@@ -295,6 +557,13 @@
                     });
                 }
             } catch (error) { console.warn("KaTeX no está listo.", error); }
+            
+            if (currentId) {
+                const doc = docs.find(d => d.id === currentId);
+                if(doc) {
+                    updateDirtyIndicator(currentId, markdownEditor.getValue() !== doc.lastSaved);
+                }
+            }
             isUpdating = false;
         }
 
@@ -348,7 +617,7 @@
                   break;
                 }
                 case 'code': newText = `\`${selectedText || 'código'}\``; break;
-                case 'link': newText = `[${selectedText || 'texto del enlace'}](https://www.ejemplo.com)`; break;
+                case 'link': toggleLinkModal(true, selectedText); return;
                 case 'image': newText = `![${selectedText || 'texto alternativo'}](https://via.placeholder.com/150)`; break;
                 case 'table': toggleTableModal(true); return;
                 case 'latex-inline': newText = `$${selectedText || 'E=mc^2'}$`; break;
@@ -367,9 +636,24 @@
         }
 
         function toggleTableModal(show) { document.getElementById('table-modal-overlay').style.display = show ? 'flex' : 'none'; }
-        function toggleSaveModal(show) { document.getElementById('save-modal-overlay').style.display = show ? 'flex' : 'none'; }
+        function toggleSaveModal(show) { 
+            const doc = docs.find(d => d.id === currentId);
+            if(doc) {
+                document.getElementById('filename').value = doc.name.replace(/\.(md|html)$/i, '');
+            }
+            document.getElementById('save-modal-overlay').style.display = show ? 'flex' : 'none'; 
+        }
         function toggleClearModal(show) { document.getElementById('clear-modal-overlay').style.display = show ? 'flex' : 'none'; }
         
+        function toggleLinkModal(show, presetText = '') {
+            document.getElementById('link-modal-overlay').style.display = show ? 'flex' : 'none';
+            if (show) {
+                document.getElementById('link-text').value = presetText;
+                document.getElementById('link-url').value  = '';
+                setTimeout(() => document.getElementById(presetText ? 'link-url' : 'link-text').focus(), 0);
+            }
+        }
+
         function saveFile(filename, content, type) {
             const blob = new Blob([content], { type });
             const a = document.createElement('a');
@@ -460,6 +744,7 @@
             const fileInput = document.getElementById('file-input');
             const saveBtn = document.getElementById('save-btn');
             const printBtn = document.getElementById('print-btn');
+            const helpBtn = document.getElementById('help-btn');
             const clearAllBtn = document.getElementById('clear-all-btn');
             const copyMdBtn = document.getElementById('copy-md-btn');
             const copyHtmlBtn = document.getElementById('copy-html-btn');
@@ -469,6 +754,8 @@
             const themeToggleBtn = document.getElementById('theme-toggle-btn');
             const layoutToggleBtn = document.getElementById('layout-toggle-btn');
             const fontSizeSelect = document.getElementById('font-size-select');
+            const newTabBtn = document.getElementById('new-tab-btn');
+            const tabBar = document.getElementById('tab-bar');
             
             // --- Elementos de modales ---
             const tableModalOverlay = document.getElementById('table-modal-overlay');
@@ -482,6 +769,10 @@
             const clearModalOverlay = document.getElementById('clear-modal-overlay');
             const confirmClearBtn = document.getElementById('confirm-clear-btn');
             const cancelClearBtn = document.getElementById('cancel-clear-btn');
+            
+            const linkModalOverlay = document.getElementById('link-modal-overlay');
+            const insertLinkBtn = document.getElementById('insert-link-btn');
+            const cancelLinkBtn = document.getElementById('cancel-link-btn');
 
 
             // --- Inicialización de librerías ---
@@ -504,6 +795,8 @@
             });
             const cmWrapper = htmlEditor.getWrapperElement();
             cmWrapper.style.display = 'none';
+            
+            markdownEditor.on('change', updateHtml);
 
             // --- Gestión del tema (claro/oscuro) ---
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
@@ -559,40 +852,29 @@
             applyFontSize(savedFs);
             fontSizeSelect.addEventListener('change', e => applyFontSize(e.target.value));
 
-
-            // --- Carga inicial y autoguardado ---
-            const savedContent = localStorage.getItem(AUTOSAVE_KEY);
-            if (savedContent) {
-                markdownEditor.setValue(savedContent);
-                lastSaved = markdownEditor.getValue();
-                updateHtml();
-                markdownEditor.focus();
+            // --- Carga inicial de documentos y autoguardado ---
+            const savedDocsList = JSON.parse(localStorage.getItem(DOCS_LIST_KEY) || '[]');
+            if (savedDocsList.length > 0) {
+                savedDocsList.forEach(docInfo => {
+                    const md = localStorage.getItem(`${AUTOSAVE_KEY_PREFIX}-${docInfo.id}`) || '';
+                    docs.push({ ...docInfo, md, lastSaved: md });
+                    addTabElement(docInfo);
+                });
+                switchTo(docs[0].id);
             } else {
-                fetch('https://raw.githubusercontent.com/jjdeharo/edimarkweb/refs/heads/main/manual.md')
-                    .then(response => response.ok ? response.text() : Promise.resolve(''))
-                    .then(text => {
-                        markdownEditor.setValue(text);
-                        lastSaved = text;
-                        updateHtml();
-                        markdownEditor.focus();
-                    })
-                    .catch(error => {
-                        console.error('Error al obtener el contenido inicial:', error);
-                        lastSaved = '';
-                        updateHtml();
-                        markdownEditor.focus();
-                    });
+                openManualDoc(); // Abre el manual si no hay otros documentos
             }
             
             setInterval(() => {
-                if(currentLayout !== 'html') {
-                    localStorage.setItem(AUTOSAVE_KEY, markdownEditor.getValue());
+                if (currentId) {
+                    const content = markdownEditor.getValue();
+                    const doc = docs.find(d => d.id === currentId);
+                    if (doc) doc.md = content;
+                    localStorage.setItem(`${AUTOSAVE_KEY_PREFIX}-${currentId}`, content);
                 }
-            }, 5000);
+            }, 3000);
 
             // --- Eventos de los editores ---
-            markdownEditor.on('change', updateHtml);
-            
             htmlEditor.on('change', (instance) => {
               if (!htmlEditor.hasFocus()) return;
               if (isUpdating) return;
@@ -601,7 +883,6 @@
               isUpdating = false;
               updateMarkdown();
             });
-            
             htmlOutput.addEventListener('input', updateMarkdown);
 
             // --- Eventos de la barra de herramientas ---
@@ -626,7 +907,20 @@
                 }
             });
 
-            // --- Eventos de los botones principales ---
+            // --- Eventos de los botones principales y pestañas ---
+            newTabBtn.addEventListener('click', () => newDoc());
+            helpBtn.addEventListener('click', (e) => openManualDoc(e.ctrlKey || e.metaKey));
+            tabBar.addEventListener('click', (e) => {
+                const tab = e.target.closest('.tab');
+                const closeBtn = e.target.closest('.tab-close');
+                if (closeBtn && tab) {
+                    e.stopPropagation();
+                    closeDoc(tab.dataset.id);
+                } else if (tab) {
+                    switchTo(tab.dataset.id);
+                }
+            });
+
             layoutToggleBtn.addEventListener('click', () => {
               const layouts = ['dual', 'md', 'html'];
               const next = layouts[(layouts.indexOf(currentLayout) + 1) % layouts.length];
@@ -658,13 +952,9 @@
                 if (!file) return;
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    if (file.name.endsWith(".html")) { 
-                        htmlOutput.innerHTML = e.target.result; 
-                        updateMarkdown(); 
-                    } else { 
-                        markdownEditor.setValue(e.target.result); 
-                    }
-                    lastSaved = markdownEditor.getValue();
+                    const doc = newDoc(file.name, e.target.result);
+                    doc.lastSaved = e.target.result;
+                    updateDirtyIndicator(doc.id, false);
                 };
                 reader.readAsText(file);
                 fileInput.value = '';
@@ -673,21 +963,33 @@
             copyMdBtn.addEventListener('click', () => copyToClipboard(markdownEditor.getValue(), copyMdBtn));
             copyHtmlBtn.addEventListener('click', () => copyToClipboard(htmlEditor.getValue(), copyHtmlBtn));
             
+            // ---- manejador de impresión: NO BORRAR ----
             printBtn.addEventListener('click', () => {
                 const printContent = document.getElementById('html-output').innerHTML;
                 const iframe = document.createElement('iframe');
-                iframe.style.position = 'absolute'; iframe.style.width = '0';
-                iframe.style.height = '0'; iframe.style.border = '0';
+                iframe.style.position = 'fixed';
+                iframe.style.right = '0';
+                iframe.style.bottom = '0';
+                iframe.style.width = '0';
+                iframe.style.height = '0';
+                iframe.style.border = '0';
                 document.body.appendChild(iframe);
 
                 const doc = iframe.contentWindow.document;
                 doc.open();
                 doc.write(`
-                    <!DOCTYPE html><html><head><title>Imprimir</title>
-                    <script src="https://cdn.tailwindcss.com?plugins=typography"><\/script>
-                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-                    <style>body { margin: 1.5rem; -webkit-print-color-adjust: exact; print-color-adjust: exact; }</style>
-                    </head><body class="prose max-w-none">${printContent}</body></html>
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                      <title>Imprimir</title>
+                      <script src="https://cdn.tailwindcss.com?plugins=typography"><\/script>
+                      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+                      <style>
+                        body { margin: 1.5rem; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                      </style>
+                    </head>
+                    <body class="prose max-w-none">${printContent}</body>
+                    </html>
                 `);
                 doc.close();
 
@@ -695,7 +997,7 @@
                     iframe.contentWindow.focus();
                     iframe.contentWindow.print();
                     document.body.removeChild(iframe);
-                }, 500);
+                }, 400);
             });
 
             // --- Eventos de los modales ---
@@ -722,17 +1024,26 @@
             saveBtn.addEventListener('click', () => toggleSaveModal(true));
             confirmSaveBtn.addEventListener('click', () => {
                 const filenameInput = document.getElementById('filename');
-                const filename = filenameInput.value || 'documento';
+                let filename = filenameInput.value || 'documento';
                 const isMd = document.getElementById('format-md').checked;
-
-                if (isMd) {
-                    saveFile(`${filename}.md`, markdownEditor.getValue(), 'text/markdown;charset=utf-8');
-                } else {
-                    const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"></head><body class="prose">${htmlOutput.innerHTML}</body></html>`;
-                    saveFile(`${filename}.html`, htmlContent, 'text/html;charset=utf-8');
+                const extension = isMd ? '.md' : '.html';
+                if (!filename.endsWith(extension)) {
+                    filename += extension;
                 }
-                lastSaved = markdownEditor.getValue();
-                localStorage.removeItem(AUTOSAVE_KEY);
+
+                const content = isMd ? markdownEditor.getValue() : `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body class="prose">${htmlOutput.innerHTML}</body></html>`;
+                const type = isMd ? 'text/markdown;charset=utf-8' : 'text/html;charset=utf-8';
+                
+                saveFile(filename, content, type);
+                
+                const doc = docs.find(d => d.id === currentId);
+                if (doc) {
+                    doc.lastSaved = markdownEditor.getValue();
+                    doc.name = filename;
+                    document.querySelector(`.tab[data-id="${currentId}"] .tab-name`).textContent = filename;
+                    updateDirtyIndicator(currentId, false);
+                    saveDocsList();
+                }
                 toggleSaveModal(false);
             });
             cancelSaveBtn.addEventListener('click', () => toggleSaveModal(false));
@@ -743,25 +1054,64 @@
               markdownEditor.setValue('');
               htmlEditor.setValue('');
               document.getElementById('html-output').innerHTML = '';
-              lastSaved = '';
-              localStorage.removeItem(AUTOSAVE_KEY);
+              if(currentId) {
+                  const doc = docs.find(d => d.id === currentId);
+                  if(doc) {
+                      doc.md = '';
+                      doc.lastSaved = '';
+                      updateDirtyIndicator(currentId, false);
+                  }
+              }
               toggleClearModal(false);
               markdownEditor.focus();
             });
             cancelClearBtn.addEventListener('click', () => toggleClearModal(false));
             clearModalOverlay.addEventListener('click', (e) => { if (e.target === clearModalOverlay) toggleClearModal(false); });
+            
+            insertLinkBtn.addEventListener('click', () => {
+              const text = document.getElementById('link-text').value.trim() || 'enlace';
+              const url  = document.getElementById('link-url').value.trim()  || '#';
+              markdownEditor.replaceSelection(`[${text}](${url})`);
+              toggleLinkModal(false);
+              markdownEditor.focus();
+            });
+            cancelLinkBtn.addEventListener('click', () => toggleLinkModal(false));
+            linkModalOverlay.addEventListener('click', e => {
+              if (e.target === linkModalOverlay) toggleLinkModal(false);
+            });
 
             // --- Atajos de teclado y otros ---
             window.addEventListener('beforeunload', (e) => {
-                if (markdownEditor.getValue() !== lastSaved) {
+                const hasUnsaved = docs.some(d => d.md !== d.lastSaved);
+                if (hasUnsaved) {
                     e.preventDefault();
-                    e.returnValue = '';
+                    e.returnValue = 'Hay documentos con cambios sin guardar. ¿Seguro que quieres salir?';
                 }
             });
 
-            document.addEventListener('keydown', (e) => {
-                const isMac = navigator.platform.includes('Mac');
+            const isMac = navigator.platform.includes('Mac');
+            let ctrlPressed = false;
+            let currentHoveredLink = null;
+
+            document.addEventListener('keydown', e => {
                 const accel = isMac ? e.metaKey : e.ctrlKey;
+                if (accel) ctrlPressed = true;
+
+                if (accel && e.key.toLowerCase() === 't') {
+                    e.preventDefault();
+                    newTabBtn.click();
+                }
+                if (accel && e.key.toLowerCase() === 'w') {
+                    e.preventDefault();
+                    if (currentId) closeDoc(currentId);
+                }
+                if (accel && e.key === 'Tab') {
+                    e.preventDefault();
+                    if(docs.length < 2) return;
+                    const currentIndex = docs.findIndex(d => d.id === currentId);
+                    const nextIndex = (e.shiftKey ? currentIndex - 1 + docs.length : currentIndex + 1) % docs.length;
+                    switchTo(docs[nextIndex].id);
+                }
 
                 if (!accel) return;
 
@@ -771,7 +1121,7 @@
                     let idx = sizes.indexOf(Number(fontSizeSelect.value));
                     if (e.key === '-') {
                         idx = Math.max(0, idx - 1);
-                    } else { // '+' or '='
+                    } else {
                         idx = Math.min(sizes.length - 1, idx + 1);
                     }
                     fontSizeSelect.value = sizes[idx];
@@ -781,12 +1131,73 @@
                 switch (e.key.toLowerCase()) {
                     case 'b': e.preventDefault(); applyFormat('bold'); break;
                     case 'i': e.preventDefault(); applyFormat('italic'); break;
-                    case 's': e.preventDefault(); toggleSaveModal(true); break;
+                    case 's': e.preventDefault(); saveBtn.click(); break;
                     case 'p': e.preventDefault(); printBtn.click(); break;
-                    case 'l': 
-                        e.preventDefault();
-                        layoutToggleBtn.click();
-                        break;
+                    case 'l': e.preventDefault(); layoutToggleBtn.click(); break;
+                    case 'h': e.preventDefault(); openManualDoc(e.shiftKey); break;
+                }
+            });
+
+            document.addEventListener('keyup', e => {
+                const accel = isMac ? e.metaKey : e.ctrlKey;
+                if (!accel) {
+                    ctrlPressed = false;
+                    if (currentHoveredLink) {
+                        currentHoveredLink.classList.remove('ctrl-hover');
+                        currentHoveredLink.title = '';
+                        currentHoveredLink = null;
+                    }
+                }
+            });
+
+            window.addEventListener('blur', () => {
+                ctrlPressed = false;
+                if (currentHoveredLink) {
+                    currentHoveredLink.classList.remove('ctrl-hover');
+                    currentHoveredLink.title = '';
+                    currentHoveredLink = null;
+                }
+            });
+
+            htmlOutput.addEventListener('mousemove', e => {
+                const targetLink = e.target.closest('a');
+                if (ctrlPressed) {
+                    if (targetLink) {
+                        if (currentHoveredLink !== targetLink) {
+                            if (currentHoveredLink) currentHoveredLink.classList.remove('ctrl-hover');
+                            targetLink.classList.add('ctrl-hover');
+                            targetLink.title = 'Ctrl + clic para abrir enlace';
+                            currentHoveredLink = targetLink;
+                        }
+                    } else {
+                        if (currentHoveredLink) {
+                            currentHoveredLink.classList.remove('ctrl-hover');
+                            currentHoveredLink.title = '';
+                            currentHoveredLink = null;
+                        }
+                    }
+                }
+            });
+
+            htmlOutput.addEventListener('click', e => {
+                if (ctrlPressed && e.buttons === 0) {
+                    const a = e.target.closest('a');
+                    if (!a) return;
+
+                    const href = a.getAttribute('href') || '';
+                    const isHashLink = href.startsWith('#');
+
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    if (isHashLink) {
+                        const target = htmlOutput.querySelector(href);
+                        if (target) {
+                            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    } else {
+                        window.open(a.href, '_blank', 'noopener');
+                    }
                 }
             });
             
