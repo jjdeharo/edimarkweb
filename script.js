@@ -564,8 +564,6 @@ window.onload = () => {
     const cmWrapper = htmlEditor.getWrapperElement();
     cmWrapper.style.display = 'none';
     
-    markdownEditor.on('change', updateHtml);
-
     // --- Gestión del tema (claro/oscuro) ---
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
     const storedTheme = localStorage.getItem('theme');
@@ -641,17 +639,6 @@ window.onload = () => {
             localStorage.setItem(`${AUTOSAVE_KEY_PREFIX}-${currentId}`, content);
         }
     }, 3000);
-
-    // --- Eventos de los editores ---
-    htmlEditor.on('change', (instance) => {
-      if (!htmlEditor.hasFocus()) return;
-      if (isUpdating) return;
-      isUpdating = true;
-      htmlOutput.innerHTML = instance.getValue();
-      isUpdating = false;
-      updateMarkdown();
-    });
-    htmlOutput.addEventListener('input', updateMarkdown);
 
     // --- Eventos de la barra de herramientas ---
     toolbar.addEventListener('click', (e) => {
@@ -1033,11 +1020,11 @@ ${htmlBody}
         }
     });
 
-    // --- Sincronización de scroll entre paneles ---
-    let syncLock = false;
-    function lineRatio(editor) { return editor.getCursor().line / Math.max(1, editor.lineCount() - 1); }
-    function scrollRatio(el) { return el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight); }
+    // --- Sincronización de scroll y contenido al hacer clic ---
+    const mdWrapper   = markdownEditor.getWrapperElement();
+    const htmlWrapper = htmlEditor.getWrapperElement();
 
+    // Sincronización de scroll
     function syncFromMarkdown() {
       if (!syncEnabled || syncLock) return;
       syncLock = true;
@@ -1064,7 +1051,25 @@ ${htmlBody}
       syncLock = false;
     }
 
-    markdownEditor.on('scroll', syncFromMarkdown);
-    htmlEditor.on('scroll', syncFromHtml);
-    htmlOutput.addEventListener('scroll', syncFromHtml);
+    function lineRatio(editor) { return editor.getCursor().line / Math.max(1, editor.lineCount() - 1); }
+    function scrollRatio(el) { return el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight); }
+
+    // Cuando el usuario haga clic en el panel Markdown…
+    mdWrapper.addEventListener('click', () => {
+      updateHtml();            // refresca la previsualización
+      syncFromMarkdown();      // sincroniza el scroll al HTML
+    });
+
+    // Cuando el usuario haga clic en el panel Previsualización…
+    htmlOutput.addEventListener('click', () => {
+      updateMarkdown();        // refresca el Markdown si ha editado en el HTML
+      syncFromHtml();          // sincroniza el scroll al Markdown
+    });
+
+    // Si permites edición directa del HTML en la vista de código…
+    htmlWrapper.addEventListener('click', () => {
+      htmlOutput.innerHTML = htmlEditor.getValue();
+      updateMarkdown();
+      syncFromHtml();          // sincroniza el scroll al Markdown
+    });
 };
