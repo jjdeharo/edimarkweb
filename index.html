@@ -106,6 +106,7 @@
         <h1 class="text-xl font-semibold text-slate-800 dark:text-slate-100">EdiMarkWeb</h1>
         <div class="flex items-center gap-1 sm:gap-2">
             <button id="theme-toggle-btn" class="action-btn focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400" aria-label="Cambiar tema"></button>
+            <button id="layout-toggle-btn" class="action-btn focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400" title="Cambiar diseño (Ctrl+L)"><i data-lucide="layout"></i></button>
             <button id="open-file-btn" class="action-btn focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400" title="Abrir archivo"><i data-lucide="folder-open" class="text-blue-600"></i><span class="hidden sm:inline">Abrir</span></button>
             <input type="file" id="file-input" class="hidden">
             <button id="save-btn" class="action-btn focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400" title="Guardar archivo (Ctrl+S)"><i data-lucide="save" class="text-green-600"></i><span class="hidden sm:inline">Guardar</span></button>
@@ -152,14 +153,14 @@
 
         <!-- Paneles del editor -->
         <div id="editor-container" class="editor-wrapper">
-            <div id="markdown-panel" class="panel w-1/2">
+            <div id="markdown-panel" class="panel w-full md:w-1/2">
                 <div class="flex justify-between items-center mb-2">
                     <h2 class="text-lg font-medium text-slate-700 dark:text-slate-200">Markdown</h2>
                     <button id="copy-md-btn" class="copy-btn focus-visible:ring-2 focus-visible:ring-blue-500" title="Copiar Markdown"><i data-lucide="copy"></i></button>
                 </div>
                 <textarea id="markdown-input"></textarea>
             </div>
-            <div id="html-panel" class="panel w-1/2">
+            <div id="html-panel" class="panel w-full md:w-1/2">
                 <div class="flex justify-between items-center mb-2">
                     <h2 id="html-panel-title" class="text-lg font-medium text-slate-700 dark:text-slate-200">Previsualización</h2>
                     <div class="flex items-center gap-2">
@@ -223,7 +224,6 @@
             </div>
         </div>
     </div>
-    <!-- NUEVO: Modal de confirmación para borrar -->
     <div id="clear-modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="clear-modal-title">
         <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm dark:bg-slate-800">
             <h3 id="clear-modal-title" class="text-lg font-bold mb-4 text-slate-800 dark:text-slate-100">
@@ -249,7 +249,9 @@
         let isUpdating = false;
         let markdownEditor, htmlEditor;
         const AUTOSAVE_KEY = 'edimarkweb-autosave';
+        const LAYOUT_KEY = 'edimarkweb-layout';
         let lastSaved = '';
+        let currentLayout;
 
         // --- Funciones principales ---
         function updateHtml() {
@@ -380,6 +382,51 @@
                 }, 2000);
             });
         }
+        
+        function applyLayout(layout) {
+          currentLayout = layout;
+          localStorage.setItem(LAYOUT_KEY, layout);
+
+          const mdPanel = document.getElementById('markdown-panel');
+          const htmlPanel = document.getElementById('html-panel');
+          const gutters = document.querySelectorAll('.gutter');
+          const layoutToggleBtn = document.getElementById('layout-toggle-btn');
+          
+          layoutToggleBtn.setAttribute('aria-pressed', layout !== 'dual');
+
+          switch (layout) {
+            case 'md':
+              mdPanel.style.display = 'block';
+              htmlPanel.style.display = 'none';
+              gutters.forEach(g => g.style.display = 'none');
+              mdPanel.style.width = '100%';
+              break;
+
+            case 'html':
+              mdPanel.style.display = 'none';
+              htmlPanel.style.display = 'block';
+              gutters.forEach(g => g.style.display = 'none');
+              htmlPanel.style.width = '100%';
+              break;
+
+            default: // 'dual'
+              mdPanel.style.display = 'block';
+              htmlPanel.style.display = 'block';
+              gutters.forEach(g => g.style.display = '');
+              mdPanel.style.width = '50%';
+              htmlPanel.style.width = '50%';
+          }
+          
+          const iconMap = { dual: 'layout', md: 'align-left', html: 'align-right' };
+          layoutToggleBtn.innerHTML = `<i data-lucide="${iconMap[layout]}"></i>`;
+          if(window.lucide) lucide.createIcons();
+
+          setTimeout(() => {
+            if (layout !== 'html') markdownEditor.refresh();
+            if (layout !== 'md') htmlEditor.refresh();
+          }, 10);
+        }
+
 
         window.onload = () => {
             // --- Obtención de elementos del DOM ---
@@ -398,6 +445,7 @@
             const headingOptions = document.getElementById('heading-options');
             const headingDropdownContainer = document.getElementById('heading-dropdown-container');
             const themeToggleBtn = document.getElementById('theme-toggle-btn');
+            const layoutToggleBtn = document.getElementById('layout-toggle-btn');
             
             // --- Elementos de modales ---
             const tableModalOverlay = document.getElementById('table-modal-overlay');
@@ -408,7 +456,6 @@
             const confirmSaveBtn = document.getElementById('confirm-save-btn');
             const cancelSaveBtn = document.getElementById('cancel-save-btn');
             
-            // NUEVO: Elementos del modal de borrado
             const clearModalOverlay = document.getElementById('clear-modal-overlay');
             const confirmClearBtn = document.getElementById('confirm-clear-btn');
             const cancelClearBtn = document.getElementById('cancel-clear-btn');
@@ -469,7 +516,7 @@
               applyTheme(newTheme);
             });
 
-            // --- Paneles redimensionables ---
+            // --- Paneles redimensionables y diseño ---
             Split(['#markdown-panel', '#html-panel'], {
                 sizes: [50, 50],
                 minSize: 280,
@@ -479,6 +526,10 @@
                     htmlEditor.refresh();
                 }
             });
+            
+            currentLayout = localStorage.getItem(LAYOUT_KEY) || 'dual';
+            applyLayout(currentLayout);
+
 
             // --- Carga inicial y autoguardado ---
             const savedContent = localStorage.getItem(AUTOSAVE_KEY);
@@ -505,7 +556,9 @@
             }
             
             setInterval(() => {
-                localStorage.setItem(AUTOSAVE_KEY, markdownEditor.getValue());
+                if(currentLayout !== 'html') {
+                    localStorage.setItem(AUTOSAVE_KEY, markdownEditor.getValue());
+                }
             }, 5000);
 
             // --- Eventos de los editores ---
@@ -545,6 +598,12 @@
             });
 
             // --- Eventos de los botones principales ---
+            layoutToggleBtn.addEventListener('click', () => {
+              const layouts = ['dual', 'md', 'html'];
+              const next = layouts[(layouts.indexOf(currentLayout) + 1) % layouts.length];
+              applyLayout(next);
+            });
+
             viewToggleBtn.addEventListener('click', () => {
                 const isPreviewVisible = htmlOutput.style.display !== 'none';
                 if (isPreviewVisible) {
@@ -611,8 +670,6 @@
             });
 
             // --- Eventos de los modales ---
-
-            // Modal de tabla
             createTableBtn.addEventListener('click', () => {
                 const cols = parseInt(document.getElementById('table-cols').value, 10) || 2;
                 const rows = parseInt(document.getElementById('table-rows').value, 10) || 1;
@@ -633,7 +690,6 @@
             cancelTableBtn.addEventListener('click', () => toggleTableModal(false));
             tableModalOverlay.addEventListener('click', (e) => { if (e.target === tableModalOverlay) toggleTableModal(false); });
             
-            // Modal de guardar
             saveBtn.addEventListener('click', () => toggleSaveModal(true));
             confirmSaveBtn.addEventListener('click', () => {
                 const filenameInput = document.getElementById('filename');
@@ -653,29 +709,18 @@
             cancelSaveBtn.addEventListener('click', () => toggleSaveModal(false));
             saveModalOverlay.addEventListener('click', (e) => { if (e.target === saveModalOverlay) toggleSaveModal(false); });
 
-            // NUEVO: Modal de borrado
             clearAllBtn.addEventListener('click', () => toggleClearModal(true));
-            
             confirmClearBtn.addEventListener('click', () => {
-              // 1. Vacía los editores y la previsualización
               markdownEditor.setValue('');
               htmlEditor.setValue('');
               document.getElementById('html-output').innerHTML = '';
-
-              // 2. Actualiza el estado interno
               lastSaved = '';
-
-              // 3. Elimina el borrador almacenado
               localStorage.removeItem(AUTOSAVE_KEY);
-
-              // 4. Cierra el modal y devuelve el foco
               toggleClearModal(false);
               markdownEditor.focus();
             });
-
             cancelClearBtn.addEventListener('click', () => toggleClearModal(false));
             clearModalOverlay.addEventListener('click', (e) => { if (e.target === clearModalOverlay) toggleClearModal(false); });
-
 
             // --- Atajos de teclado y otros ---
             window.addEventListener('beforeunload', (e) => {
@@ -696,6 +741,10 @@
                     case 'i': e.preventDefault(); applyFormat('italic'); break;
                     case 's': e.preventDefault(); toggleSaveModal(true); break;
                     case 'p': e.preventDefault(); printBtn.click(); break;
+                    case 'l': 
+                        e.preventDefault();
+                        layoutToggleBtn.click();
+                        break;
                 }
             });
             
