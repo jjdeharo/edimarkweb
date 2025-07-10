@@ -1242,7 +1242,7 @@
               syncLock = false;
             }
 
-            markdownEditor.on('cursorActivity', syncFromMarkdown);
+            markdownEditor.on('scroll', syncFromMarkdown);
             htmlEditor.on('cursorActivity', syncFromHtml);
             htmlOutput.addEventListener('click', syncFromHtml);
             htmlOutput.addEventListener('keyup', syncFromHtml);
