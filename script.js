@@ -987,28 +987,6 @@ ${htmlBody}
             }
         }
     });
-
-    htmlOutput.addEventListener('click', e => {
-        if (ctrlPressed && e.buttons === 0) {
-            const a = e.target.closest('a');
-            if (!a) return;
-
-            const href = a.getAttribute('href') || '';
-            const isHashLink = href.startsWith('#');
-
-            e.preventDefault();
-            e.stopPropagation();
-
-            if (isHashLink) {
-                const target = htmlOutput.querySelector(href);
-                if (target) {
-                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            } else {
-                window.open(a.href, '_blank', 'noopener');
-            }
-        }
-    });
     
     if (window.lucide) {
         lucide.createIcons();
@@ -1021,55 +999,59 @@ ${htmlBody}
     });
 
     // --- Sincronización de scroll y contenido al hacer clic ---
-    const mdWrapper   = markdownEditor.getWrapperElement();
-    const htmlWrapper = htmlEditor.getWrapperElement();
-
-    // Sincronización de scroll
-    function syncFromMarkdown() {
-      if (!syncEnabled || syncLock) return;
-      syncLock = true;
-      const ratio = lineRatio(markdownEditor);
-      if (cmWrapper.style.display === 'none') {
-        htmlOutput.scrollTop = ratio * (htmlOutput.scrollHeight - htmlOutput.clientHeight);
-      } else if (!htmlEditor.hasFocus()) {
-        const scroller = htmlEditor.getScrollerElement();
-        scroller.scrollTop = ratio * (scroller.scrollHeight - scroller.clientHeight);
-        htmlEditor.setCursor(Math.round(ratio * (htmlEditor.lineCount() - 1)), 0);
-      }
-      syncLock = false;
-    }
-
-    function syncFromHtml() {
-      if (!syncEnabled || syncLock) return;
-      syncLock = true;
-      let ratio = (cmWrapper.style.display === 'none') ? scrollRatio(htmlOutput) : lineRatio(htmlEditor);
+    
+    function scrollMarkdownToRatio(r) {
+      if (!syncEnabled) return;
       const scroller = markdownEditor.getScrollerElement();
-      scroller.scrollTop = ratio * (scroller.scrollHeight - scroller.clientHeight);
-      if (!markdownEditor.hasFocus()) {
-        markdownEditor.setCursor(Math.round(ratio * (markdownEditor.lineCount() - 1)), 0);
-      }
-      syncLock = false;
+      scroller.scrollTop = r * (scroller.scrollHeight - scroller.clientHeight);
+      markdownEditor.setCursor(Math.round(r * (markdownEditor.lineCount() - 1)), 0);
     }
 
-    function lineRatio(editor) { return editor.getCursor().line / Math.max(1, editor.lineCount() - 1); }
-    function scrollRatio(el) { return el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight); }
+    function syncFromMarkdown() {
+      if (!syncEnabled) return;
+      const lineRatio = markdownEditor.getCursor().line / Math.max(1, markdownEditor.lineCount() - 1);
+      htmlOutput.scrollTop = lineRatio * (htmlOutput.scrollHeight - htmlOutput.clientHeight);
+    }
 
-    // Cuando el usuario haga clic en el panel Markdown…
-    mdWrapper.addEventListener('click', () => {
-      updateHtml();            // refresca la previsualización
-      syncFromMarkdown();      // sincroniza el scroll al HTML
+    markdownEditor.getWrapperElement().addEventListener('mouseup', () => {
+      requestAnimationFrame(() => {
+        updateHtml();
+        syncFromMarkdown();
+      });
     });
 
-    // Cuando el usuario haga clic en el panel Previsualización…
-    htmlOutput.addEventListener('click', () => {
-      updateMarkdown();        // refresca el Markdown si ha editado en el HTML
-      syncFromHtml();          // sincroniza el scroll al Markdown
-    });
+    htmlOutput.addEventListener('click', e => {
+      if (ctrlPressed && e.target.closest('a')) { // Manejo de enlaces internos/externos
+          const a = e.target.closest('a');
+          const href = a.getAttribute('href') || '';
+          const isHashLink = href.startsWith('#');
 
-    // Si permites edición directa del HTML en la vista de código…
-    htmlWrapper.addEventListener('click', () => {
-      htmlOutput.innerHTML = htmlEditor.getValue();
+          e.preventDefault();
+          e.stopPropagation();
+
+          if (isHashLink) {
+              const target = htmlOutput.querySelector(href);
+              if (target) {
+                  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+          } else {
+              window.open(a.href, '_blank', 'noopener');
+          }
+          return;
+      }
+      
+      const clickY = e.clientY - htmlOutput.getBoundingClientRect().top + htmlOutput.scrollTop;
+      const ratio  = clickY / Math.max(1, htmlOutput.scrollHeight);
+      scrollMarkdownToRatio(ratio);
       updateMarkdown();
-      syncFromHtml();          // sincroniza el scroll al Markdown
+    });
+
+    htmlEditor.getWrapperElement().addEventListener('mouseup', () => {
+      requestAnimationFrame(() => {
+        htmlOutput.innerHTML = htmlEditor.getValue();
+        updateMarkdown();
+        const lineRatio = htmlEditor.getCursor().line / Math.max(1, htmlEditor.lineCount() - 1);
+        scrollMarkdownToRatio(lineRatio);
+      });
     });
 };
