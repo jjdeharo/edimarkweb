@@ -311,6 +311,63 @@
             localStorage.setItem(DOCS_LIST_KEY, JSON.stringify(docList));
         }
 
+        function startRename(tab) {
+            const tabNameSpan = tab.querySelector('.tab-name');
+            if (!tabNameSpan || tab.querySelector('input')) return;
+
+            const currentName = tabNameSpan.textContent;
+            const docId = tab.dataset.id;
+            const closeBtn = tab.querySelector('.tab-close');
+            const dirtyIndicator = tab.querySelector('.tab-dirty');
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentName;
+            input.className = 'bg-white dark:bg-slate-800 border border-blue-500 rounded px-1 text-sm w-32';
+            input.setAttribute('aria-label', 'Nuevo nombre del documento');
+
+            tabNameSpan.style.display = 'none';
+            if (closeBtn) closeBtn.style.display = 'none';
+
+            tab.insertBefore(input, dirtyIndicator);
+            input.focus();
+            input.select();
+
+            const finishRename = () => {
+                const newName = input.value.trim();
+                
+                input.removeEventListener('blur', finishRename);
+                input.removeEventListener('keydown', handleKey);
+                if (input.parentNode) input.remove();
+
+                tabNameSpan.style.display = '';
+                if (closeBtn) closeBtn.style.display = '';
+
+                if (newName && newName !== currentName) {
+                    const doc = docs.find(d => d.id === docId);
+                    if (doc) {
+                        doc.name = newName;
+                        tabNameSpan.textContent = newName;
+                        saveDocsList();
+                    }
+                }
+                tab.focus();
+            };
+
+            const handleKey = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    finishRename();
+                } else if (e.key === 'Escape') {
+                    input.value = currentName;
+                    finishRename();
+                }
+            };
+
+            input.addEventListener('blur', finishRename);
+            input.addEventListener('keydown', handleKey);
+        }
+
         function newDoc(name = 'Sin título', md = '') {
             const id = Date.now().toString(36) + Math.random().toString(36).substring(2);
             const newDoc = { id, name, md, lastSaved: md };
@@ -334,6 +391,7 @@
                 <i data-lucide="x" class="tab-close w-4 h-4 opacity-50 hover:opacity-100"></i>
             `;
             tabBar.appendChild(tab);
+            tab.addEventListener('dblclick', () => startRename(tab));
             if(window.lucide) lucide.createIcons();
         }
 
@@ -353,14 +411,14 @@
                 const isActive = t.dataset.id === id;
                 t.setAttribute('aria-selected', isActive);
                 t.classList.toggle('bg-white', isActive);
-                t.classList.toggle('dark:bg-slate-800', isActive);
+                t.classList.toggle('dark:bg-slate-900', isActive);
                 t.classList.toggle('border-slate-200', isActive);
                 t.classList.toggle('dark:border-slate-700', isActive);
                 t.classList.toggle('border-transparent', !isActive);
             });
 
             markdownEditor.setValue(doc.md);
-            updateHtml(); // Asegura que la vista previa se actualiza
+            updateHtml();
             markdownEditor.focus();
             updateDirtyIndicator(id, doc.md !== doc.lastSaved);
         }
@@ -510,7 +568,7 @@
         function toggleSaveModal(show) { 
             const doc = docs.find(d => d.id === currentId);
             if(doc) {
-                document.getElementById('filename').value = doc.name.replace(/\.md$|\.html$/, '');
+                document.getElementById('filename').value = doc.name.replace(/\.(md|html)$/i, '');
             }
             document.getElementById('save-modal-overlay').style.display = show ? 'flex' : 'none'; 
         }
@@ -840,7 +898,7 @@
                     filename += extension;
                 }
 
-                const content = isMd ? markdownEditor.getValue() : `<!DOCTYPE html><html>...${htmlOutput.innerHTML}</body></html>`;
+                const content = isMd ? markdownEditor.getValue() : `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body class="prose">${htmlOutput.innerHTML}</body></html>`;
                 const type = isMd ? 'text/markdown;charset=utf-8' : 'text/html;charset=utf-8';
                 
                 saveFile(filename, content, type);
