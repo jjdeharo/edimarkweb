@@ -78,6 +78,15 @@
         .dark .prose code { color: #e2e8f0; }
         .dark .prose blockquote { border-left-color: #475569; color: #94a3b8;}
         .dark .prose a { color: #93c5fd; }
+        
+        /* Estilo para enlaces con Ctrl/Cmd presionado */
+        #html-output a.ctrl-hover {
+            text-decoration: underline;
+            color: #2563eb; /* Tailwind blue-600 */
+        }
+        .dark #html-output a.ctrl-hover {
+            color: #60a5fa; /* Tailwind blue-400 */
+        }
 
 
         .action-btn {
@@ -988,9 +997,13 @@
                 }
             });
 
-            document.addEventListener('keydown', (e) => {
-                const isMac = navigator.platform.includes('Mac');
+            const isMac = navigator.platform.includes('Mac');
+            let ctrlPressed = false;
+            let currentHoveredLink = null;
+
+            document.addEventListener('keydown', e => {
                 const accel = isMac ? e.metaKey : e.ctrlKey;
+                if (accel) ctrlPressed = true;
 
                 if (accel && e.key.toLowerCase() === 't') {
                     e.preventDefault();
@@ -1029,6 +1042,61 @@
                     case 's': e.preventDefault(); saveBtn.click(); break;
                     case 'p': e.preventDefault(); printBtn.click(); break;
                     case 'l': e.preventDefault(); layoutToggleBtn.click(); break;
+                }
+            });
+
+            document.addEventListener('keyup', e => {
+                if (!((isMac && e.metaKey) || (!isMac && e.ctrlKey))) {
+                    ctrlPressed = false;
+                    if (currentHoveredLink) {
+                        currentHoveredLink.classList.remove('ctrl-hover');
+                        currentHoveredLink.title = '';
+                        currentHoveredLink = null;
+                    }
+                    htmlOutput.style.cursor = 'text';
+                }
+            });
+
+            window.addEventListener('blur', () => {
+                ctrlPressed = false;
+                if (currentHoveredLink) {
+                    currentHoveredLink.classList.remove('ctrl-hover');
+                    currentHoveredLink.title = '';
+                    currentHoveredLink = null;
+                }
+                htmlOutput.style.cursor = 'text';
+            });
+
+            htmlOutput.addEventListener('mousemove', e => {
+                const targetLink = e.target.closest('a');
+                if (ctrlPressed) {
+                    if (targetLink) {
+                        if (currentHoveredLink !== targetLink) {
+                            if (currentHoveredLink) currentHoveredLink.classList.remove('ctrl-hover');
+                            targetLink.classList.add('ctrl-hover');
+                            targetLink.title = 'Ctrl + clic para abrir enlace';
+                            currentHoveredLink = targetLink;
+                        }
+                        htmlOutput.style.cursor = 'pointer';
+                    } else {
+                        if (currentHoveredLink) {
+                            currentHoveredLink.classList.remove('ctrl-hover');
+                            currentHoveredLink.title = '';
+                            currentHoveredLink = null;
+                        }
+                        htmlOutput.style.cursor = 'text';
+                    }
+                }
+            });
+
+            htmlOutput.addEventListener('click', e => {
+                if (ctrlPressed && e.buttons === 0) {
+                    const a = e.target.closest('a');
+                    if (a && a.href) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.open(a.href, '_blank', 'noopener');
+                    }
                 }
             });
             
