@@ -334,6 +334,7 @@
         let docs = [];
         let currentId = null;
         let currentLayout;
+        let syncEnabled = true;
 
         // --- Funciones de gestión de pestañas y documentos ---
         function saveDocsList() {
@@ -684,6 +685,7 @@
         
         function applyLayout(layout) {
           currentLayout = layout;
+          syncEnabled = (layout === 'dual');
           localStorage.setItem(LAYOUT_KEY, layout);
 
           const mdPanel = document.getElementById('markdown-panel');
@@ -1217,7 +1219,7 @@
             function scrollRatio(el) { return el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight); }
 
             function syncFromMarkdown() {
-              if (syncLock) return;
+              if (!syncEnabled || syncLock) return;
               syncLock = true;
               const ratio = lineRatio(markdownEditor);
               if (cmWrapper.style.display === 'none') {
@@ -1231,7 +1233,7 @@
             }
 
             function syncFromHtml() {
-              if (syncLock) return;
+              if (!syncEnabled || syncLock) return;
               syncLock = true;
               let ratio = (cmWrapper.style.display === 'none') ? scrollRatio(htmlOutput) : lineRatio(htmlEditor);
               const scroller = markdownEditor.getScrollerElement();
@@ -1243,9 +1245,8 @@
             }
 
             markdownEditor.on('scroll', syncFromMarkdown);
-            htmlEditor.on('cursorActivity', syncFromHtml);
-            htmlOutput.addEventListener('click', syncFromHtml);
-            htmlOutput.addEventListener('keyup', syncFromHtml);
+            htmlEditor.on('scroll', syncFromHtml);
+            htmlOutput.addEventListener('scroll', syncFromHtml);
         };
     </script>
 </body>
