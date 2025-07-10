@@ -821,9 +821,10 @@ ${htmlBody}
         
         const doc = docs.find(d => d.id === currentId);
         if (doc) {
+            const displayName = filename.replace(/\.(md|html)$/i, '');  // sin extensión
             doc.lastSaved = markdownEditor.getValue();
-            doc.name = filename;
-            document.querySelector(`.tab[data-id="${currentId}"] .tab-name`).textContent = filename;
+            doc.name = displayName;
+            document.querySelector(`.tab[data-id="${currentId}"] .tab-name`).textContent = displayName;
             updateDirtyIndicator(currentId, false);
             saveDocsList();
         }
