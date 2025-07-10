@@ -1,6 +1,7 @@
 // Declaración de variables globales
 let turndownService;
 let isUpdating = false;
+let syncLock = false; // Evita ReferenceError de código legado
 let markdownEditor, htmlEditor;
 const AUTOSAVE_KEY_PREFIX = 'edimarkweb-autosave';
 const DOCS_LIST_KEY = 'edimarkweb-docslist';
