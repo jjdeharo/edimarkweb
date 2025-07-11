@@ -119,9 +119,10 @@ body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
         flex-wrap: wrap;
     }
 
-    /* NUEVA REGLA: Corrige la alineación del contenedor de las pestañas para evitar que el punto rojo se corte */
-    div:has(> #tab-bar) {
-        align-items: flex-start;
+    /* Alinea al inicio el contenedor y el botón nuevo para que no se corte el punto */
+    #tab-bar,
+    #new-tab-btn {
+        align-self: flex-start;
     }
 }
 /* --- FIN DE LAS CORRECCIONES PARA MÓVIL --- */
