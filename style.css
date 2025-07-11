@@ -113,5 +113,10 @@ body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
     header > div:nth-child(2) {
         flex-wrap: wrap;
     }
+    
+    /* Regla para que las pestañas también salten de línea */
+    #tab-bar {
+        flex-wrap: wrap;
+    }
 }
 /* --- FIN DE LAS CORRECCIONES PARA MÓVIL --- */
