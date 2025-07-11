@@ -95,27 +95,23 @@ body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
     opacity: 1;
 }
 
-/* --- INICIO DE LA CORRECCIÓN --- */
-/* Estas reglas solo se aplican en pantallas con un ancho máximo de 768px (móviles y tablets en vertical) */
+/* --- INICIO DE LAS CORRECCIONES PARA MÓVIL --- */
 @media (max-width: 768px) {
     .editor-wrapper {
-        /* Cambia la dirección de los paneles para que se apilen uno encima del otro */
         flex-direction: column;
     }
 
     .panel {
-         /* Hace que cada panel ocupe todo el ancho de la pantalla */
         width: 100% !important;
     }
 
     .CodeMirror, .editor-pane {
-        /*
-         Ajusta la altura de los paneles.
-         En lugar de restar un valor fijo grande, le damos una altura más razonable
-         basada en la altura de la pantalla del dispositivo (vh = viewport height).
-         Esto soluciona el problema del editor "aplastado".
-        */
-        height: 40vh;
+       height: 40vh;
+    }
+    
+    /* Regla para que los botones de la cabecera salten de línea */
+    header > div:nth-child(2) {
+        flex-wrap: wrap;
     }
 }
-/* --- FIN DE LA CORRECCIÓN --- */
+/* --- FIN DE LAS CORRECCIONES PARA MÓVIL --- */
