@@ -107,7 +107,12 @@ function switchTo(id) {
     if (currentId && currentId !== id) {
         const previousDoc = docs.find(d => d.id === currentId);
         if (previousDoc) {
+            // Guardar contenido actual y actualizar indicador de cambios en la pestaña que dejamos
             previousDoc.md = markdownEditor.getValue();
+            updateDirtyIndicator(
+              previousDoc.id,
+              previousDoc.md !== previousDoc.lastSaved
+            );
         }
     }
 
