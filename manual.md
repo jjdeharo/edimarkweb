@@ -1,5 +1,6 @@
-# Manual de EdiMarkWeb
 ![EdiMarkWev](https://jjdeharo.github.io/edimarkweb/logo_100px.png)
+
+# Manual de EdiMarkWeb
 
 Este editor te permite escribir en **Markdown** y ver el resultado **HTML** en tiempo real, con soporte completo para fórmulas **LaTeX** y gestión de múltiples documentos en pestañas.
 
