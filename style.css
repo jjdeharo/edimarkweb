@@ -8,7 +8,7 @@ body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
 .panel { min-width: 280px; }
 
 .CodeMirror, .editor-pane {
-    height: calc(100vh - 20rem); /* Ajustado para la barra de pestañas */
+    height: calc(100vh - 22rem); /* Ajustado para la barra de pestañas y búsqueda */
     border: 1px solid #e2e8f0;
     border-radius: 0.5rem;
     font-size: var(--fs-base); /* Usa la variable CSS para el tamaño */
@@ -95,6 +95,21 @@ body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
     opacity: 1;
 }
 
+/* --- INICIO DE ESTILOS PARA LA BÚSQUEDA --- */
+.cm-s-eclipse .cm-search-highlight,
+.cm-s-material-darker .cm-search-highlight {
+    background-color: rgba(253, 224, 71, 0.5); /* Amarillo traslúcido para todas las coincidencias */
+    color: inherit !important;
+}
+
+/* Estilo para la coincidencia actualmente seleccionada */
+.cm-s-eclipse .cm-search-current,
+.cm-s-material-darker .cm-search-current {
+    background-color: #fb923c; /* Naranja para la coincidencia activa */
+}
+/* --- FIN DE ESTILOS PARA LA BÚSQUEDA --- */
+
+
 /* --- INICIO DE LAS CORRECCIONES PARA MÓVIL --- */
 @media (max-width: 768px) {
     .editor-wrapper {
@@ -112,6 +127,7 @@ body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
     /* Regla para que los botones de la cabecera salten de línea */
     header > div:nth-child(2) {
         flex-wrap: wrap;
+        justify-content: flex-end;
     }
     
     /* Regla para que las pestañas también salten de línea */

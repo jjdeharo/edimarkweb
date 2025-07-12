@@ -107,12 +107,8 @@ function switchTo(id) {
     if (currentId && currentId !== id) {
         const previousDoc = docs.find(d => d.id === currentId);
         if (previousDoc) {
-            // Guardar contenido actual y actualizar indicador de cambios en la pestaña que dejamos
             previousDoc.md = markdownEditor.getValue();
-            updateDirtyIndicator(
-              previousDoc.id,
-              previousDoc.md !== previousDoc.lastSaved
-            );
+            updateDirtyIndicator(previousDoc.id, previousDoc.md !== previousDoc.lastSaved);
         }
     }
 
@@ -179,7 +175,7 @@ function openManualDoc(forceReload = false) {
         return;
     }
 
-    fetch('https://raw.githubusercontent.com/jjdeharo/edimarkweb/main/manual.md')
+    fetch('manual.md')
         .then(r => r.ok ? r.text() : '# Manual\n\nError: No se pudo cargar el manual.')
         .then(md => {
             if (manualDoc && forceReload) {
@@ -214,14 +210,9 @@ function updateHtml() {
         const rawHtml = marked.parse(sanitizedText);
         htmlOutput.innerHTML = rawHtml;
 
-        // Generar IDs para encabezados para enlaces internos
         htmlOutput.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(h => {
           if (!h.id) {
-            h.id = h.textContent
-                     .trim()
-                     .toLowerCase()
-                     .replace(/\s+/g,'-')
-                     .replace(/[^\w\-áéíóúüñ]/g,'');
+            h.id = h.textContent.trim().toLowerCase().replace(/\s+/g,'-').replace(/[^\w\-áéíóúüñ]/g,'');
           }
         });
 
@@ -260,6 +251,7 @@ function updateMarkdown() {
     isUpdating = false;
 }
 
+// --- INICIO DE LA MODIFICACIÓN ---
 function applyFormat(format) {
     const cursor = markdownEditor.getCursor();
     const selectedText = markdownEditor.getSelection();
@@ -267,103 +259,62 @@ function applyFormat(format) {
     let newText = '';
 
     switch (format) {
-        case 'bold': {
-          if (hadSelection) {
-            markdownEditor.replaceSelection(`**${selectedText}**`, 'around');
-          } else {
+        case 'bold': 
+          if (hadSelection) markdownEditor.replaceSelection(`**${selectedText}**`, 'around');
+          else {
             markdownEditor.replaceSelection('****');
             markdownEditor.setCursor({ line: cursor.line, ch: cursor.ch + 2 });
           }
-          markdownEditor.focus();
-          return;
-        }
-        case 'italic': {
-          if (hadSelection) {
-            markdownEditor.replaceSelection(`*${selectedText}*`, 'around');
-          } else {
+          break;
+        case 'italic':
+          if (hadSelection) markdownEditor.replaceSelection(`*${selectedText}*`, 'around');
+          else {
             markdownEditor.replaceSelection('**');
             markdownEditor.setCursor({ line: cursor.line, ch: cursor.ch + 1 });
           }
-          markdownEditor.focus();
-          return;
-        }
-        case 'code': {
-          if (hadSelection) {
-            markdownEditor.replaceSelection(`\`${selectedText}\`` , 'around');
-          } else {
+          break;
+        case 'code':
+          if (hadSelection) markdownEditor.replaceSelection(`\`${selectedText}\`` , 'around');
+          else {
             markdownEditor.replaceSelection('``');
             markdownEditor.setCursor({ line: cursor.line, ch: cursor.ch + 1 });
           }
-          markdownEditor.focus();
-          return;
-        }
-        case 'latex-inline': {
-          if (hadSelection) {
-            markdownEditor.replaceSelection(`$${selectedText}$`, 'around');
-          } else {
+          break;
+        case 'latex-inline':
+          if (hadSelection) markdownEditor.replaceSelection(`$${selectedText}$`, 'around');
+          else {
             markdownEditor.replaceSelection('$$');
             markdownEditor.setCursor({ line: cursor.line, ch: cursor.ch + 1 });
           }
-          markdownEditor.focus();
-          return;
-        }
-        case 'latex-block': {
-          if (hadSelection) {
-            markdownEditor.replaceSelection(`\n\\[\n${selectedText}\n\\]\n`, 'around');
-          } else {
+          break;
+        case 'latex-block':
+          if (hadSelection) markdownEditor.replaceSelection(`\n\\[\n${selectedText}\n\\]\n`, 'around');
+          else {
             markdownEditor.replaceSelection('\n\\[\n\n\\]\n');
             markdownEditor.setCursor({ line: cursor.line + 2, ch: 0 });
           }
-          markdownEditor.focus();
-          return;
-        }
+          break;
         
-        // --- Formatos que no cambian ---
         case 'heading-1': newText = `\n# ${selectedText || 'Título 1'}\n`; break;
         case 'heading-2': newText = `\n## ${selectedText || 'Título 2'}\n`; break;
         case 'heading-3': newText = `\n### ${selectedText || 'Título 3'}\n`; break;
         case 'heading-4': newText = `\n#### ${selectedText || 'Título 4'}\n`; break;
         case 'quote': newText = `\n> ${selectedText || 'Cita'}\n`; break;
-        case 'list-ul': {
-          if (!hadSelection) {
-            newText = '\n- ';
-          } else {
-            newText = selectedText
-              .split('\n')
-              .map(l => l.replace(/^(\s*)([-*+]|(\d+\.))\s+/, '$1').replace(/^(\s*)$/, '$1'))
-              .map(l => l.trim() ? `- ${l}` : '')
-              .join('\n');
-          }
-          break;
-        }
-        case 'list-ol': {
-          if (!hadSelection) {
-            newText = '\n1. ';
-          } else {
-            const lines = selectedText
-              .split('\n')
-              .map(l => l.replace(/^(\s*)([-*+]|(\d+\.))\s+/, '$1'));
-            newText = lines
-              .map((l, i) => l.trim() ? `${i + 1}. ${l}` : '')
-              .join('\n');
-          }
-          break;
-        }
+        case 'list-ul': 
+            newText = hadSelection ? selectedText.split('\n').map(l => l.trim() ? `- ${l}` : '').join('\n') : '\n- ';
+            break;
+        case 'list-ol':
+            newText = hadSelection ? selectedText.split('\n').map((l, i) => l.trim() ? `${i + 1}. ${l}` : '').join('\n') : '\n1. ';
+            break;
         case 'link': toggleLinkModal(true, selectedText); return;
-        case 'image': newText = `![${selectedText || 'texto alternativo'}](https://via.placeholder.com/150)`; break;
+        case 'image': toggleImageModal(true, selectedText); return; // Llama al nuevo modal de imagen
         case 'table': toggleTableModal(true); return;
     }
     
-    markdownEditor.replaceSelection(newText, 'around');
-
-    if (!hadSelection && (format === 'list-ul' || format === 'list-ol')) {
-      const targetLine = cursor.line + 1;
-      const targetCh = newText.length - 1;
-      markdownEditor.setCursor({ line: targetLine, ch: targetCh });
-    }
-
+    if (newText) markdownEditor.replaceSelection(newText, 'around');
     markdownEditor.focus();
 }
+// --- FIN DE LA MODIFICACIÓN ---
 
 function toggleTableModal(show) { document.getElementById('table-modal-overlay').style.display = show ? 'flex' : 'none'; }
 function toggleSaveModal(show) { 
@@ -383,6 +334,17 @@ function toggleLinkModal(show, presetText = '') {
         setTimeout(() => document.getElementById(presetText ? 'link-url' : 'link-text').focus(), 0);
     }
 }
+
+// --- INICIO: Nueva función para el modal de imagen ---
+function toggleImageModal(show, presetText = '') {
+    document.getElementById('image-modal-overlay').style.display = show ? 'flex' : 'none';
+    if (show) {
+        document.getElementById('image-alt-text').value = presetText;
+        document.getElementById('image-url').value  = '';
+        setTimeout(() => document.getElementById(presetText ? 'image-url' : 'image-alt-text').focus(), 0);
+    }
+}
+// --- FIN: Nueva función para el modal de imagen ---
 
 function saveFile(filename, content, type) {
     const blob = new Blob([content], { type });
@@ -405,10 +367,7 @@ async function copyPlain(text, btn) {
         btn.innerHTML = '<i data-lucide="x" class="text-red-500"></i>';
     } finally {
         if (window.lucide) lucide.createIcons();
-        setTimeout(() => {
-            btn.innerHTML = originalIcon;
-            if (window.lucide) lucide.createIcons();
-        }, 2000);
+        setTimeout(() => { btn.innerHTML = originalIcon; if (window.lucide) lucide.createIcons(); }, 2000);
     }
 }
 
@@ -423,7 +382,7 @@ async function copyRich(html, btn) {
         })
       ]);
     } else {
-      await navigator.clipboard.writeText(html); // compatibilidad básica
+      await navigator.clipboard.writeText(html);
     }
     btn.innerHTML = '<i data-lucide="check" class="text-green-500"></i>';
   } catch (err) {
@@ -438,20 +397,15 @@ async function copyRich(html, btn) {
 function buildHtmlWithTex() {
   const htmlOutput = document.getElementById('html-output');
   const clone = htmlOutput.cloneNode(true);
-
-  // Fórmulas en bloque ($$...$$)
   clone.querySelectorAll('.katex-display').forEach(div => {
     const tex = div.querySelector('annotation[encoding="application/x-tex"]')?.textContent || '';
     div.replaceWith(document.createTextNode(`\n\\[\n${tex}\n\\]\n`));
   });
-
-  // Fórmulas en línea (\( ... \))
   clone.querySelectorAll('span.katex').forEach(span => {
-    if (span.closest('.katex-display')) return; // Ya procesada
+    if (span.closest('.katex-display')) return;
     const tex = span.querySelector('annotation[encoding="application/x-tex"]')?.textContent || '';
     span.replaceWith(document.createTextNode(`\\(${tex}\\)`));
   });
-
   return clone.innerHTML;
 }
 
@@ -474,15 +428,13 @@ function applyLayout(layout) {
       gutters.forEach(g => g.style.display = 'none');
       mdPanel.style.width = '100%';
       break;
-
     case 'html':
       mdPanel.style.display = 'none';
       htmlPanel.style.display = 'block';
       gutters.forEach(g => g.style.display = 'none');
       htmlPanel.style.width = '100%';
       break;
-
-    default: // 'dual'
+    default:
       mdPanel.style.display = 'block';
       htmlPanel.style.display = 'block';
       gutters.forEach(g => g.style.display = '');
@@ -547,7 +499,12 @@ window.onload = () => {
     const linkModalOverlay = document.getElementById('link-modal-overlay');
     const insertLinkBtn = document.getElementById('insert-link-btn');
     const cancelLinkBtn = document.getElementById('cancel-link-btn');
-
+    
+    // --- INICIO: Elementos del nuevo modal de imagen ---
+    const imageModalOverlay = document.getElementById('image-modal-overlay');
+    const insertImageBtn = document.getElementById('insert-image-btn');
+    const cancelImageBtn = document.getElementById('cancel-image-btn');
+    // --- FIN: Elementos del nuevo modal de imagen ---
 
     // --- Inicialización de librerías ---
     if (window.TurndownService) {
@@ -577,28 +534,19 @@ window.onload = () => {
     function applyTheme(theme) {
       document.documentElement.classList.toggle('dark', theme === 'dark');
       localStorage.setItem('theme', theme);
-      
       const newEditorTheme = theme === 'dark' ? 'material-darker' : 'eclipse';
       markdownEditor.setOption('theme', newEditorTheme);
       htmlEditor.setOption('theme', newEditorTheme);
-
       const icon = theme === 'dark' ? 'moon' : 'sun';
       themeToggleBtn.innerHTML = `<i data-lucide="${icon}"></i>`;
       if (window.lucide) lucide.createIcons();
     }
 
-    if (storedTheme) {
-      applyTheme(storedTheme);
-    } else {
-      applyTheme(prefersDark.matches ? 'dark' : 'light');
-    }
-
+    if (storedTheme) applyTheme(storedTheme);
+    else applyTheme(prefersDark.matches ? 'dark' : 'light');
     prefersDark.addEventListener('change', (e) => {
-      if (!localStorage.getItem('theme')) {
-        applyTheme(e.matches ? 'dark' : 'light');
-      }
+      if (!localStorage.getItem('theme')) applyTheme(e.matches ? 'dark' : 'light');
     });
-
     themeToggleBtn.addEventListener('click', () => {
       const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
       applyTheme(newTheme);
@@ -609,12 +557,8 @@ window.onload = () => {
         sizes: [50, 50],
         minSize: 280,
         gutterSize: 8,
-        onDrag: () => {
-            markdownEditor.refresh();
-            htmlEditor.refresh();
-        }
+        onDrag: () => { markdownEditor.refresh(); htmlEditor.refresh(); }
     });
-    
     currentLayout = localStorage.getItem(LAYOUT_KEY) || 'dual';
     applyLayout(currentLayout);
 
@@ -634,7 +578,7 @@ window.onload = () => {
         });
         switchTo(docs[0].id);
     } else {
-        openManualDoc(); // Abre el manual si no hay otros documentos
+        openManualDoc();
     }
     
     setInterval(() => {
@@ -674,12 +618,8 @@ window.onload = () => {
     tabBar.addEventListener('click', (e) => {
         const tab = e.target.closest('.tab');
         const closeBtn = e.target.closest('.tab-close');
-        if (closeBtn && tab) {
-            e.stopPropagation();
-            closeDoc(tab.dataset.id);
-        } else if (tab) {
-            switchTo(tab.dataset.id);
-        }
+        if (closeBtn && tab) { e.stopPropagation(); closeDoc(tab.dataset.id); } 
+        else if (tab) { switchTo(tab.dataset.id); }
     });
 
     layoutToggleBtn.addEventListener('click', () => {
@@ -690,20 +630,11 @@ window.onload = () => {
 
     viewToggleBtn.addEventListener('click', () => {
         const isPreviewVisible = htmlOutput.style.display !== 'none';
-        if (isPreviewVisible) {
-            htmlOutput.style.display = 'none';
-            cmWrapper.style.display = 'block';
-            setTimeout(() => htmlEditor.refresh(), 1);
-            htmlPanelTitle.textContent = 'Código HTML';
-            viewToggleBtn.title = 'Cambiar a previsualización';
-            viewToggleBtn.innerHTML = '<i data-lucide="eye"></i>';
-        } else {
-            cmWrapper.style.display = 'none';
-            htmlOutput.style.display = 'block';
-            htmlPanelTitle.textContent = 'Previsualización';
-            viewToggleBtn.title = 'Cambiar a vista de código';
-            viewToggleBtn.innerHTML = '<i data-lucide="code-2"></i>';
-        }
+        cmWrapper.style.display = isPreviewVisible ? 'block' : 'none';
+        htmlOutput.style.display = isPreviewVisible ? 'none' : 'block';
+        if (isPreviewVisible) setTimeout(() => htmlEditor.refresh(), 1);
+        htmlPanelTitle.textContent = isPreviewVisible ? 'Código HTML' : 'Previsualización';
+        viewToggleBtn.innerHTML = isPreviewVisible ? '<i data-lucide="eye"></i>' : '<i data-lucide="code-2"></i>';
         if (window.lucide) lucide.createIcons();
     });
     
@@ -728,38 +659,16 @@ window.onload = () => {
        copyRich(html, copyHtmlBtn);
     });
     
-    // ---- manejador de impresión: NO BORRAR ----
     printBtn.addEventListener('click', () => {
         const printContent = document.getElementById('html-output').innerHTML;
         const iframe = document.createElement('iframe');
-        iframe.style.position = 'fixed';
-        iframe.style.right = '0';
-        iframe.style.bottom = '0';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
-        iframe.style.border = '0';
+        iframe.style.display = 'none';
         document.body.appendChild(iframe);
-
         const doc = iframe.contentWindow.document;
         doc.open();
-        doc.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <title>Imprimir</title>
-              <script src="https://cdn.tailwindcss.com?plugins=typography"><\/script>
-              <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-              <style>
-                body { margin: 1.5rem; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-              </style>
-            </head>
-            <body class="prose max-w-none">${printContent}</body>
-            </html>
-        `);
+        doc.write(`<!DOCTYPE html><html><head><title>Imprimir</title><script src="https://cdn.tailwindcss.com?plugins=typography"><\/script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"><style>body { margin: 1.5rem; -webkit-print-color-adjust: exact; print-color-adjust: exact; }<\/style></head><body class="prose max-w-none">${printContent}</body></html>`);
         doc.close();
-
         setTimeout(() => {
-            iframe.contentWindow.focus();
             iframe.contentWindow.print();
             document.body.removeChild(iframe);
         }, 400);
@@ -770,13 +679,13 @@ window.onload = () => {
         const cols = parseInt(document.getElementById('table-cols').value, 10) || 2;
         const rows = parseInt(document.getElementById('table-rows').value, 10) || 1;
         let tableMd = '\n|';
-        for (let i = 1; i <= cols; i++) { tableMd += ` Cabecera ${i} |`; }
+        for (let i = 1; i <= cols; i++) tableMd += ` Cabecera ${i} |`;
         tableMd += '\n|';
-        for (let i = 0; i < cols; i++) { tableMd += '------------|'; }
+        for (let i = 0; i < cols; i++) tableMd += '------------|';
         tableMd += '\n';
         for (let r = 0; r < rows; r++) {
             tableMd += '|';
-            for (let c = 0; c < cols; c++) { tableMd += ' Celda      |'; }
+            for (let c = 0; c < cols; c++) tableMd += ' Celda      |';
             tableMd += '\n';
         }
         markdownEditor.replaceSelection(tableMd);
@@ -792,41 +701,12 @@ window.onload = () => {
         let filename = filenameInput.value || 'documento';
         const isMd = document.getElementById('format-md').checked;
         const extension = isMd ? '.md' : '.html';
-        if (!filename.endsWith(extension)) {
-            filename += extension;
-        }
-
-        let content;
-        const type = isMd ? 'text/markdown;charset=utf-8' : 'text/html;charset=utf-8';
-
-        if (isMd) {
-            content = markdownEditor.getValue();
-        } else {
-            const htmlBody = buildHtmlWithTex();
-            content = `<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${filename.replace(/\.html$/, '')}</title>
-  <script src="https://cdn.tailwindcss.com?plugins=typography"><\/script>
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"><\/script>
-  <script id="MathJax-script" async
-    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
-  <\/script>
-  <style>body { margin: 2rem; } .prose { max-width: 80ch; margin: auto; } </style>
-</head>
-<body class="prose max-w-none">
-${htmlBody}
-</body>
-</html>`;
-        }
-        
-        saveFile(filename, content, type);
-        
+        if (!filename.endsWith(extension)) filename += extension;
+        const content = isMd ? markdownEditor.getValue() : `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>${filename.replace(/\.html$/, '')}</title><script src="https://cdn.tailwindcss.com?plugins=typography"><\/script><script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"><\/script><style>body { margin: 2rem; } .prose { max-width: 80ch; margin: auto; } </style></head><body class="prose max-w-none">${buildHtmlWithTex()}</body></html>`;
+        saveFile(filename, content, isMd ? 'text/markdown;charset=utf-8' : 'text/html;charset=utf-8');
         const doc = docs.find(d => d.id === currentId);
         if (doc) {
-            const displayName = filename.replace(/\.(md|html)$/i, '');  // sin extensión
+            const displayName = filename.replace(/\.(md|html)$/i, '');
             doc.lastSaved = markdownEditor.getValue();
             doc.name = displayName;
             document.querySelector(`.tab[data-id="${currentId}"] .tab-name`).textContent = displayName;
@@ -845,11 +725,7 @@ ${htmlBody}
       document.getElementById('html-output').innerHTML = '';
       if(currentId) {
           const doc = docs.find(d => d.id === currentId);
-          if(doc) {
-              doc.md = '';
-              doc.lastSaved = '';
-              updateDirtyIndicator(currentId, false);
-          }
+          if(doc) { doc.md = ''; doc.lastSaved = ''; updateDirtyIndicator(currentId, false); }
       }
       toggleClearModal(false);
       markdownEditor.focus();
@@ -865,194 +741,129 @@ ${htmlBody}
       markdownEditor.focus();
     });
     cancelLinkBtn.addEventListener('click', () => toggleLinkModal(false));
-    linkModalOverlay.addEventListener('click', e => {
-      if (e.target === linkModalOverlay) toggleLinkModal(false);
+    linkModalOverlay.addEventListener('click', e => { if (e.target === linkModalOverlay) toggleLinkModal(false); });
+    
+    // --- INICIO: Eventos del nuevo modal de imagen ---
+    insertImageBtn.addEventListener('click', () => {
+      const alt = document.getElementById('image-alt-text').value.trim() || 'imagen';
+      const url = document.getElementById('image-url').value.trim() || '#';
+      markdownEditor.replaceSelection(`![${alt}](${url})`);
+      toggleImageModal(false);
+      markdownEditor.focus();
     });
+    cancelImageBtn.addEventListener('click', () => toggleImageModal(false));
+    imageModalOverlay.addEventListener('click', e => { if (e.target === imageModalOverlay) toggleImageModal(false); });
+    // --- FIN: Eventos del nuevo modal de imagen ---
 
     // --- Atajos de teclado y otros ---
     window.addEventListener('beforeunload', (e) => {
         const hasUnsaved = docs.some(d => d.md !== d.lastSaved);
-        if (hasUnsaved) {
-            e.preventDefault();
-            e.returnValue = 'Hay documentos con cambios sin guardar. ¿Seguro que quieres salir?';
-        }
+        if (hasUnsaved) { e.preventDefault(); e.returnValue = 'Hay documentos con cambios sin guardar. ¿Seguro que quieres salir?'; }
     });
 
     const isMac = navigator.platform.includes('Mac');
     let ctrlPressed = false;
     let currentHoveredLink = null;
     
-    const shortcutMap = {
-      'b': 'bold',
-      'i': 'italic',
-      '`': 'code',
-      'k': 'link',
-      'm': 'latex-inline',
-      'M': 'latex-block',
-      'Q': 'quote',
-      'L': 'list-ul',
-      'O': 'list-ol',
-      'T': 'table',
-      'I': 'image',
-      '1': 'heading-1',
-      '2': 'heading-2',
-      '3': 'heading-3',
-      '4': 'heading-4'
-    };
+    const shortcutMap = { 'b': 'bold', 'i': 'italic', '`': 'code', 'k': 'link', 'm': 'latex-inline', 'M': 'latex-block', 'Q': 'quote', 'L': 'list-ul', 'O': 'list-ol', 'T': 'table', 'I': 'image', '1': 'heading-1', '2': 'heading-2', '3': 'heading-3', '4': 'heading-4' };
 
     document.addEventListener('keydown', e => {
         const accel = isMac ? e.metaKey : e.ctrlKey;
         if (accel) ctrlPressed = true;
 
-        // Atajos de gestión de pestañas/ventana
-        if (accel && e.key.toLowerCase() === 't') {
-            e.preventDefault();
-            newTabBtn.click();
-        }
-        if (accel && e.key.toLowerCase() === 'w') {
-            e.preventDefault();
-            if (currentId) closeDoc(currentId);
-        }
-        if (accel && e.key === 'Tab') {
-            e.preventDefault();
-            if(docs.length < 2) return;
-            const currentIndex = docs.findIndex(d => d.id === currentId);
-            const nextIndex = (e.shiftKey ? currentIndex - 1 + docs.length : currentIndex + 1) % docs.length;
-            switchTo(docs[nextIndex].id);
-        }
-
-        if (!accel) return; // El resto de atajos requieren Ctrl/Cmd
-
-        // Atajos de acciones de la aplicación
-        switch (e.key.toLowerCase()) {
-            case 's': e.preventDefault(); saveBtn.click(); break;
-            case 'p': e.preventDefault(); printBtn.click(); break;
-            case 'l': e.preventDefault(); layoutToggleBtn.click(); break;
-            case 'h': e.preventDefault(); openManualDoc(e.shiftKey); break;
-        }
-
-        // Atajo para tamaño de fuente
-        if (['=', '+', '-'].includes(e.key)) {
-            e.preventDefault();
-            const sizes = [14, 16, 18, 20];
-            let idx = sizes.indexOf(Number(fontSizeSelect.value));
-            if (e.key === '-') {
-                idx = Math.max(0, idx - 1);
-            } else {
-                idx = Math.min(sizes.length - 1, idx + 1);
+        if (document.getElementById('search-wrapper').classList.contains('hidden')) {
+            if (accel && e.key.toLowerCase() === 't') { e.preventDefault(); newTabBtn.click(); }
+            if (accel && e.key.toLowerCase() === 'w') { e.preventDefault(); if (currentId) closeDoc(currentId); }
+            if (accel && e.key === 'Tab') {
+                e.preventDefault();
+                if(docs.length < 2) return;
+                const currentIndex = docs.findIndex(d => d.id === currentId);
+                const nextIndex = (e.shiftKey ? currentIndex - 1 + docs.length : currentIndex + 1) % docs.length;
+                switchTo(docs[nextIndex].id);
             }
-            fontSizeSelect.value = sizes[idx];
-            applyFontSize(sizes[idx]);
-        }
-        
-        // Atajos de formato
-        const key = e.shiftKey ? e.key.toUpperCase() : e.key.toLowerCase();
-        const fmt = shortcutMap[key];
-        if (fmt) {
-          e.preventDefault();
-          applyFormat(fmt);
+
+            if (!accel) return;
+            switch (e.key.toLowerCase()) {
+                case 's': e.preventDefault(); saveBtn.click(); break;
+                case 'p': e.preventDefault(); printBtn.click(); break;
+                case 'l': e.preventDefault(); layoutToggleBtn.click(); break;
+                case 'h': e.preventDefault(); openManualDoc(e.shiftKey); break;
+            }
+            if (['=', '+', '-'].includes(e.key)) {
+                e.preventDefault();
+                const sizes = [14, 16, 18, 20];
+                let idx = sizes.indexOf(Number(fontSizeSelect.value));
+                idx = e.key === '-' ? Math.max(0, idx - 1) : Math.min(sizes.length - 1, idx + 1);
+                fontSizeSelect.value = sizes[idx];
+                applyFontSize(sizes[idx]);
+            }
+            const key = e.shiftKey ? e.key.toUpperCase() : e.key.toLowerCase();
+            if (shortcutMap[key]) { e.preventDefault(); applyFormat(shortcutMap[key]); }
         }
     });
 
     document.addEventListener('keyup', e => {
-        const accel = isMac ? e.metaKey : e.ctrlKey;
         if (!e.metaKey && !e.ctrlKey) {
             ctrlPressed = false;
-            if (currentHoveredLink) {
-                currentHoveredLink.classList.remove('ctrl-hover');
-                currentHoveredLink.title = '';
-                currentHoveredLink = null;
-            }
+            if (currentHoveredLink) { currentHoveredLink.classList.remove('ctrl-hover'); currentHoveredLink.title = ''; currentHoveredLink = null; }
         }
     });
 
     window.addEventListener('blur', () => {
         ctrlPressed = false;
-        if (currentHoveredLink) {
+        if (currentHoveredLink) { currentHoveredLink.classList.remove('ctrl-hover'); currentHoveredLink.title = ''; currentHoveredLink = null; }
+    });
+
+    htmlOutput.addEventListener('mousemove', e => {
+        const targetLink = e.target.closest('a');
+        if (ctrlPressed && targetLink) {
+            if (currentHoveredLink !== targetLink) {
+                if (currentHoveredLink) currentHoveredLink.classList.remove('ctrl-hover');
+                targetLink.classList.add('ctrl-hover');
+                targetLink.title = 'Ctrl + clic para abrir enlace';
+                currentHoveredLink = targetLink;
+            }
+        } else if (currentHoveredLink) {
             currentHoveredLink.classList.remove('ctrl-hover');
             currentHoveredLink.title = '';
             currentHoveredLink = null;
         }
     });
-
-    htmlOutput.addEventListener('mousemove', e => {
-        const targetLink = e.target.closest('a');
-        if (ctrlPressed) {
-            if (targetLink) {
-                if (currentHoveredLink !== targetLink) {
-                    if (currentHoveredLink) currentHoveredLink.classList.remove('ctrl-hover');
-                    targetLink.classList.add('ctrl-hover');
-                    targetLink.title = 'Ctrl + clic para abrir enlace';
-                    currentHoveredLink = targetLink;
-                }
-            } else {
-                if (currentHoveredLink) {
-                    currentHoveredLink.classList.remove('ctrl-hover');
-                    currentHoveredLink.title = '';
-                    currentHoveredLink = null;
-                }
-            }
-        }
-    });
     
-    if (window.lucide) {
-        lucide.createIcons();
-    }
-
+    if (window.lucide) lucide.createIcons();
     document.querySelectorAll('button[title]').forEach(btn => {
-        if (!btn.hasAttribute('aria-label')) {
-            btn.setAttribute('aria-label', btn.title.replace(/\s*\(.+\)$/, ''));
-        }
+        if (!btn.hasAttribute('aria-label')) { btn.setAttribute('aria-label', btn.title.replace(/\s*\(.+\)$/, '')); }
     });
 
-    // --- Sincronización de scroll y contenido al hacer clic ---
-    
+    // --- Sincronización ---
     function scrollMarkdownToRatio(r) {
       if (!syncEnabled) return;
       const scroller = markdownEditor.getScrollerElement();
       scroller.scrollTop = r * (scroller.scrollHeight - scroller.clientHeight);
-      markdownEditor.setCursor(Math.round(r * (markdownEditor.lineCount() - 1)), 0);
     }
-
     function syncFromMarkdown() {
       if (!syncEnabled) return;
       const lineRatio = markdownEditor.getCursor().line / Math.max(1, markdownEditor.lineCount() - 1);
       htmlOutput.scrollTop = lineRatio * (htmlOutput.scrollHeight - htmlOutput.clientHeight);
     }
-
-    markdownEditor.getWrapperElement().addEventListener('mouseup', () => {
-      requestAnimationFrame(() => {
-        updateHtml();
-        syncFromMarkdown();
-      });
-    });
-
+    markdownEditor.on('change', () => { requestAnimationFrame(() => { updateHtml(); syncFromMarkdown(); }); });
     htmlOutput.addEventListener('click', e => {
-      if (ctrlPressed && e.target.closest('a')) { // Manejo de enlaces internos/externos
+      if (ctrlPressed && e.target.closest('a')) {
           const a = e.target.closest('a');
           const href = a.getAttribute('href') || '';
-          const isHashLink = href.startsWith('#');
-
-          e.preventDefault();
-          e.stopPropagation();
-
-          if (isHashLink) {
+          e.preventDefault(); e.stopPropagation();
+          if (href.startsWith('#')) {
               const target = htmlOutput.querySelector(href);
-              if (target) {
-                  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              }
+              if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
           } else {
               window.open(a.href, '_blank', 'noopener');
           }
           return;
       }
-      
       const clickY = e.clientY - htmlOutput.getBoundingClientRect().top + htmlOutput.scrollTop;
       const ratio  = clickY / Math.max(1, htmlOutput.scrollHeight);
       scrollMarkdownToRatio(ratio);
-      updateMarkdown();
     });
-
     htmlEditor.getWrapperElement().addEventListener('mouseup', () => {
       requestAnimationFrame(() => {
         htmlOutput.innerHTML = htmlEditor.getValue();
@@ -1061,4 +872,8 @@ ${htmlBody}
         scrollMarkdownToRatio(lineRatio);
       });
     });
+
+    if (typeof initSearch === 'function') {
+        initSearch(markdownEditor, htmlEditor, () => currentLayout);
+    }
 };
