@@ -1,3 +1,13 @@
+/* --- INICIO: Estilos para expandir --- */
+#main-container {
+    transition: max-width 0.5s ease-in-out;
+}
+
+#main-container.is-expanded {
+    max-width: 98%;
+}
+/* --- FIN: Estilos para expandir --- */
+
 /* Estilos personalizados */
 :root { --fs-base: 16px; } /* Valor por defecto para el tamaño de fuente */
 

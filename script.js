@@ -251,7 +251,6 @@ function updateMarkdown() {
     isUpdating = false;
 }
 
-// --- INICIO DE LA MODIFICACIÓN ---
 function applyFormat(format) {
     const cursor = markdownEditor.getCursor();
     const selectedText = markdownEditor.getSelection();
@@ -307,14 +306,13 @@ function applyFormat(format) {
             newText = hadSelection ? selectedText.split('\n').map((l, i) => l.trim() ? `${i + 1}. ${l}` : '').join('\n') : '\n1. ';
             break;
         case 'link': toggleLinkModal(true, selectedText); return;
-        case 'image': toggleImageModal(true, selectedText); return; // Llama al nuevo modal de imagen
+        case 'image': toggleImageModal(true, selectedText); return;
         case 'table': toggleTableModal(true); return;
     }
     
     if (newText) markdownEditor.replaceSelection(newText, 'around');
     markdownEditor.focus();
 }
-// --- FIN DE LA MODIFICACIÓN ---
 
 function toggleTableModal(show) { document.getElementById('table-modal-overlay').style.display = show ? 'flex' : 'none'; }
 function toggleSaveModal(show) { 
@@ -335,7 +333,6 @@ function toggleLinkModal(show, presetText = '') {
     }
 }
 
-// --- INICIO: Nueva función para el modal de imagen ---
 function toggleImageModal(show, presetText = '') {
     document.getElementById('image-modal-overlay').style.display = show ? 'flex' : 'none';
     if (show) {
@@ -344,7 +341,6 @@ function toggleImageModal(show, presetText = '') {
         setTimeout(() => document.getElementById(presetText ? 'image-url' : 'image-alt-text').focus(), 0);
     }
 }
-// --- FIN: Nueva función para el modal de imagen ---
 
 function saveFile(filename, content, type) {
     const blob = new Blob([content], { type });
@@ -462,6 +458,8 @@ function applyFontSize(px) {
 
 window.onload = () => {
     // --- Obtención de elementos del DOM ---
+    const mainContainer = document.getElementById('main-container');
+    const toggleWidthBtn = document.getElementById('toggle-width-btn');
     const htmlOutput = document.getElementById('html-output');
     const viewToggleBtn = document.getElementById('view-toggle-btn');
     const htmlPanelTitle = document.getElementById('html-panel-title');
@@ -487,24 +485,18 @@ window.onload = () => {
     const tableModalOverlay = document.getElementById('table-modal-overlay');
     const createTableBtn = document.getElementById('create-table-btn');
     const cancelTableBtn = document.getElementById('cancel-table-btn');
-    
     const saveModalOverlay = document.getElementById('save-modal-overlay');
     const confirmSaveBtn = document.getElementById('confirm-save-btn');
     const cancelSaveBtn = document.getElementById('cancel-save-btn');
-    
     const clearModalOverlay = document.getElementById('clear-modal-overlay');
     const confirmClearBtn = document.getElementById('confirm-clear-btn');
     const cancelClearBtn = document.getElementById('cancel-clear-btn');
-    
     const linkModalOverlay = document.getElementById('link-modal-overlay');
     const insertLinkBtn = document.getElementById('insert-link-btn');
     const cancelLinkBtn = document.getElementById('cancel-link-btn');
-    
-    // --- INICIO: Elementos del nuevo modal de imagen ---
     const imageModalOverlay = document.getElementById('image-modal-overlay');
     const insertImageBtn = document.getElementById('insert-image-btn');
     const cancelImageBtn = document.getElementById('cancel-image-btn');
-    // --- FIN: Elementos del nuevo modal de imagen ---
 
     // --- Inicialización de librerías ---
     if (window.TurndownService) {
@@ -527,6 +519,15 @@ window.onload = () => {
     const cmWrapper = htmlEditor.getWrapperElement();
     cmWrapper.style.display = 'none';
     
+    // --- Lógica para expandir ancho ---
+    toggleWidthBtn.addEventListener('click', () => {
+        mainContainer.classList.toggle('is-expanded');
+        const icon = toggleWidthBtn.querySelector('i');
+        const isExpanded = mainContainer.classList.contains('is-expanded');
+        icon.setAttribute('data-lucide', isExpanded ? 'minimize' : 'maximize');
+        lucide.createIcons();
+    });
+
     // --- Gestión del tema (claro/oscuro) ---
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
     const storedTheme = localStorage.getItem('theme');
@@ -743,7 +744,6 @@ window.onload = () => {
     cancelLinkBtn.addEventListener('click', () => toggleLinkModal(false));
     linkModalOverlay.addEventListener('click', e => { if (e.target === linkModalOverlay) toggleLinkModal(false); });
     
-    // --- INICIO: Eventos del nuevo modal de imagen ---
     insertImageBtn.addEventListener('click', () => {
       const alt = document.getElementById('image-alt-text').value.trim() || 'imagen';
       const url = document.getElementById('image-url').value.trim() || '#';
@@ -753,7 +753,6 @@ window.onload = () => {
     });
     cancelImageBtn.addEventListener('click', () => toggleImageModal(false));
     imageModalOverlay.addEventListener('click', e => { if (e.target === imageModalOverlay) toggleImageModal(false); });
-    // --- FIN: Eventos del nuevo modal de imagen ---
 
     // --- Atajos de teclado y otros ---
     window.addEventListener('beforeunload', (e) => {
