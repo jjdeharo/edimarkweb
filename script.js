@@ -1019,16 +1019,13 @@ ${htmlBody}
       const lineRatio = markdownEditor.getCursor().line / Math.max(1, markdownEditor.lineCount() - 1);
       htmlOutput.scrollTop = lineRatio * (htmlOutput.scrollHeight - htmlOutput.clientHeight);
     }
-    
-    // -- INICIO DE LA MODIFICACIÓN --
-    // Se ha cambiado el evento 'mouseup' por 'change' para que se actualice en tiempo real
+
     markdownEditor.on('change', () => {
       requestAnimationFrame(() => {
         updateHtml();
         syncFromMarkdown();
       });
     });
-    // -- FIN DE LA MODIFICACIÓN --
 
     htmlOutput.addEventListener('click', e => {
       if (ctrlPressed && e.target.closest('a')) { // Manejo de enlaces internos/externos
@@ -1064,4 +1061,10 @@ ${htmlBody}
         scrollMarkdownToRatio(lineRatio);
       });
     });
+
+    // INICIO: Inicialización de la búsqueda
+    if (typeof initSearch === 'function') {
+        initSearch(markdownEditor, htmlEditor, () => currentLayout);
+    }
+    // FIN: Inicialización de la búsqueda
 };
