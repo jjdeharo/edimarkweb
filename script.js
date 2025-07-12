@@ -519,14 +519,16 @@ window.onload = () => {
     const cmWrapper = htmlEditor.getWrapperElement();
     cmWrapper.style.display = 'none';
     
-    // --- Lógica para expandir ancho ---
+    // --- INICIO DE LA CORRECCIÓN ---
     toggleWidthBtn.addEventListener('click', () => {
         mainContainer.classList.toggle('is-expanded');
-        const icon = toggleWidthBtn.querySelector('i');
         const isExpanded = mainContainer.classList.contains('is-expanded');
-        icon.setAttribute('data-lucide', isExpanded ? 'minimize' : 'maximize');
+        const iconName = isExpanded ? 'minimize' : 'maximize';
+        // Se regenera el contenido del botón para que Lucide lo vuelva a procesar
+        toggleWidthBtn.innerHTML = `<i data-lucide="${iconName}"></i>`;
         lucide.createIcons();
     });
+    // --- FIN DE LA CORRECCIÓN ---
 
     // --- Gestión del tema (claro/oscuro) ---
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
