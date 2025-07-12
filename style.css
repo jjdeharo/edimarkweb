@@ -126,11 +126,3 @@ body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
     }
 }
 /* --- FIN DE LAS CORRECCIONES PARA MÓVIL --- */
-
-/* --- INICIO DE ESTILOS PARA LA BÚSQUEDA --- */
-.cm-s-eclipse .cm-search-highlight,
-.cm-s-material-darker .cm-search-highlight {
-    background-color: #fde047; /* Un amarillo para resaltar */
-    color: #000 !important;
-}
-/* --- FIN DE ESTILOS PARA LA BÚSQUEDA --- */

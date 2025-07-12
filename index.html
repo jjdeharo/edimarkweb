@@ -7,6 +7,7 @@
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <title>EdiMarkWeb: Editor Markdown &harr; HTML con LaTeX</title>
 
+    <!-- Tailwind CSS con el plugin de Tipografía -->
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <script>
       tailwind.config = {
@@ -14,20 +15,25 @@
       };
     </script>
 
+    <!-- Librerías de Markdown y HTML -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/turndown/7.1.1/turndown.min.js" defer></script>
 
+    <!-- KaTeX para renderizar fórmulas LaTeX -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0KOVEMVIhbGKLCePo231CVQSHcLesaPSub69DVZXucRepAS5rPjer" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" xintegrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" defer></script>
     
+    <!-- Lucide Icons -->
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.523.0/dist/umd/lucide.min.js" defer></script>
     
+    <!-- CodeMirror: base y temas -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/eclipse.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/material-darker.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.js" defer></script>
     
+    <!-- CodeMirror: modos de lenguaje y addons -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/mode/overlay.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/xml/xml.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/javascript/javascript.min.js" defer></script>
@@ -37,8 +43,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/gfm/gfm.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/edit/continuelist.min.js" defer></script>
 
+    <!-- Split.js para paneles redimensionables -->
     <script src="https://cdn.jsdelivr.net/npm/split.js/dist/split.min.js"></script>
 
+    <!-- Estilos personalizados -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="p-4 sm:p-6 md:p-8">
@@ -73,13 +81,7 @@
     </header>
 
     <div class="p-4">
-        <div id="search-wrapper" class="hidden mb-4 p-2 bg-slate-50 border border-slate-200 rounded-lg flex items-center gap-2 dark:bg-slate-800 dark:border-slate-700">
-            <i data-lucide="search" class="text-slate-500"></i>
-            <input type="text" id="search-input" placeholder="Buscar (Ctrl+F)..." class="flex-grow bg-transparent focus:outline-none text-sm text-slate-800 dark:text-slate-200">
-            <button id="close-search-btn" class="toolbar-btn" title="Cerrar búsqueda (Esc)">
-                <i data-lucide="x"></i>
-            </button>
-        </div>
+        <!-- Barra de herramientas de formato -->
         <div id="toolbar" class="bg-slate-50 p-2 rounded-lg mb-4 flex flex-wrap items-center gap-2 border border-slate-200 dark:bg-slate-800 dark:border-slate-700">
              <div class="flex items-center gap-1">
                 <button class="toolbar-btn focus-visible:ring-2 focus-visible:ring-blue-500" data-format="bold" title="Negrita (Ctrl+B)"><i data-lucide="bold"></i></button>
@@ -114,11 +116,13 @@
             </div>
         </div>
 
+        <!-- Barra de pestañas -->
         <div class="flex items-center border-b border-slate-200 dark:border-slate-700">
             <div id="tab-bar" role="tablist" class="flex-grow flex gap-1 overflow-x-auto"></div>
             <button id="new-tab-btn" class="action-btn p-2" title="Nueva pestaña (Ctrl+T)"><i data-lucide="plus"></i></button>
         </div>
 
+        <!-- Paneles del editor -->
         <div id="editor-container" class="editor-wrapper pt-3">
             <div id="markdown-panel" class="panel w-full md:w-1/2">
                 <div class="flex justify-between items-center mb-2">
@@ -143,6 +147,7 @@
 </main>
 
 
+    <!-- Modales -->
     <div id="table-modal-overlay" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="table-modal-title">
         <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm dark:bg-slate-800">
             <h3 id="table-modal-title" class="text-lg font-bold mb-4 text-slate-800 dark:text-slate-100">Crear tabla</h3>
@@ -158,7 +163,7 @@
             </div>
             <div class="mt-6 flex justify-end gap-3">
                 <button id="cancel-table-btn" class="px-4 py-2 bg-slate-100 text-slate-800 rounded-md hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-blue-500 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">Cancelar</button>
-                <button id="create-table-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-blue-500">Crear</button>
+                <button id="create-table-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500">Crear</button>
             </div>
         </div>
     </div>
@@ -201,3 +206,33 @@
             <div class="mt-6 flex justify-end gap-3">
                 <button id="cancel-clear-btn" class="px-4 py-2 bg-slate-100 text-slate-800 rounded-md hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-blue-500 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">Cancelar</button>
                 <button id="confirm-clear-btn" class="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    <span>Borrar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="link-modal-overlay" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="link-modal-title">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm dark:bg-slate-800">
+            <h3 id="link-modal-title" class="text-lg font-bold mb-4 text-slate-800 dark:text-slate-100">Insertar enlace</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="link-text" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Texto a mostrar</label>
+                    <input id="link-text" type="text" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200">
+                </div>
+                <div>
+                    <label for="link-url" class="block text-sm font-medium text-slate-700 dark:text-slate-300">URL</label>
+                    <input id="link-url" type="url" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button id="cancel-link-btn" class="px-4 py-2 bg-slate-100 text-slate-800 rounded-md hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-blue-500 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">Cancelar</button>
+                <button id="insert-link-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500">Insertar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script principal de la aplicación -->
+    <script src="script.js" defer></script>
+</body>
+</html>

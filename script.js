@@ -1020,7 +1020,7 @@ ${htmlBody}
       htmlOutput.scrollTop = lineRatio * (htmlOutput.scrollHeight - htmlOutput.clientHeight);
     }
 
-    markdownEditor.on('change', () => {
+    markdownEditor.getWrapperElement().addEventListener('mouseup', () => {
       requestAnimationFrame(() => {
         updateHtml();
         syncFromMarkdown();
@@ -1061,10 +1061,4 @@ ${htmlBody}
         scrollMarkdownToRatio(lineRatio);
       });
     });
-
-    // INICIO: Inicialización de la búsqueda
-    if (typeof initSearch === 'function') {
-        initSearch(markdownEditor, htmlEditor, () => currentLayout);
-    }
-    // FIN: Inicialización de la búsqueda
 };
