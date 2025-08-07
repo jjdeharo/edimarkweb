@@ -82,20 +82,24 @@ body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
     border: 1px solid transparent;
     border-bottom: 1px solid #e2e8f0;
     background-color: #f1f5f9;
+    color: #475569;
 }
 .dark .tab {
     border-bottom: 1px solid #334155;
     background-color: #1e293b;
+    color: #94a3b8;
 }
 .tab[aria-selected="true"] {
     background-color: white;
     border-color: #e2e8f0;
     border-bottom-color: transparent;
+    color: #1e293b;
 }
 .dark .tab[aria-selected="true"] {
     background-color: #0f172a;
     border-color: #334155;
     border-bottom-color: transparent;
+    color: #f1f5f9;
 }
 .tab-close {
     opacity: 0.5;
