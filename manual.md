@@ -77,19 +77,20 @@ El panel de previsualización no es solo para ver, también puedes interactuar c
 | Acción | Atajo (Windows/Linux) | Atajo (macOS) |
 | :--- | :--- | :--- |
 | **Formato** | | |
-| Negrita | `Ctrl` + `B` | `Cmd` + `B` |
-| Cursiva | `Ctrl` + `I` | `Cmd` + `I` |
+| Negrita | Ctrl + B | Cmd + B |
+| Cursiva | Ctrl + I | Cmd + I |
 | **Gestión de documentos** | | |
-| Nueva pestaña | `Ctrl` + `T` | `Cmd` + `T` |
-| Cerrar pestaña | `Ctrl` + `W` | `Cmd` + `W` |
-| Cambiar de pestaña | `Ctrl` + `Tab` | `Cmd` + `Tab` |
-| Guardar | `Ctrl` + `S` | `Cmd` + `S` |
-| Imprimir | `Ctrl` + `P` | `Cmd` + `P` |
-| Abrir manual | `Ctrl` + `H` | `Cmd` + `H` |
+| Nueva pestaña | Ctrl + T | Cmd + T |
+| Cerrar pestaña | Ctrl + W | Cmd + W |
+| Cambiar de pestaña | Ctrl + Tab | Cmd + Tab |
+| Guardar | Ctrl + S | Cmd + S |
+| Imprimir | Ctrl + P | Cmd + P |
+| Abrir manual | Ctrl + H | Cmd + H |
 | **Interfaz** | | |
-| Cambiar diseño | `Ctrl` + `L` | `Cmd` + `L` |
-| Aumentar tamaño | `Ctrl` + `+` | `Cmd` + `+` |
-| Reducir tamaño | `Ctrl` + `-` | `Cmd` + `-` |
+| Cambiar diseño | Ctrl + L | Cmd + L |
+| Aumentar tamaño | Ctrl + + | Cmd + + |
+| Reducir tamaño | Ctrl + - | Cmd + - |
+
 
 ---
 
