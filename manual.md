@@ -24,8 +24,9 @@ La aplicación te permite trabajar con varios documentos a la vez utilizando un 
 * **Cambiar de pestaña**. Haz clic en cualquier pestaña para ver su contenido. También puedes usar `Ctrl+Tab` para ciclar entre ellas (`Ctrl+Shift+Tab` para ir en sentido inverso).
 * **Renombrar pestañas**. Haz doble clic sobre el nombre de una pestaña para editarlo. El nuevo nombre se usará como sugerencia al guardar el archivo.
 * **Cerrar pestañas**. Pulsa la `X` que aparece en cada pestaña o usa el atajo `Ctrl+W`. Si hay cambios sin guardar, la aplicación te pedirá confirmación.
-* **Cambios sin guardar**. Un punto rojo (`●`) junto al nombre del documento indica que hay cambios pendientes de guardar. El punto desaparece cuando guardas el archivo.
+* **Cambios sin guardar**. Un punto rojo (●) junto al nombre del documento indica que hay cambios pendientes de guardar. El punto desaparece cuando guardas el archivo.
 * **Autoguardado**. Cada pestaña guarda su contenido automáticamente en la memoria del navegador para evitar pérdidas accidentales.
+* **Cargar un archivo**. Puedes cargar un archivo con el icono *Abrir* o arrastando y soltando uno encima.
 
 ---
 
