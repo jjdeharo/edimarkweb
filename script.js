@@ -880,37 +880,55 @@ window.onload = () => {
 };
 
 /* =========================================================
-   Arrastrar y soltar .md con indicación visual de "abrir en pestaña"
+   Arrastrar .md con "fondo por detrás" para soltar en toda la app
    ========================================================= */
 (function () {
-  // Si existe un overlay anterior, lo retiramos para evitar duplicados
-  const prev = document.getElementById('drop-overlay');
-  if (prev && prev.parentNode) prev.parentNode.removeChild(prev);
+  // Limpia posibles versiones anteriores
+  for (const id of ['drop-backdrop']) {
+    const el = document.getElementById(id);
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+  }
 
-  // Overlay a pantalla completa
-  const overlay = document.createElement('div');
-  overlay.id = 'drop-overlay';
-  overlay.className = 'fixed inset-0 hidden z-[60] cursor-copy';
-  overlay.innerHTML = [
-    '<div class="w-full h-full flex items-center justify-center select-none">',
-      // Zona fantasma con borde discontinuo como pista clara de "soltar aquí"
-      '<div class="drop-ghost pointer-events-none flex flex-col items-center justify-center gap-3 ',
-      'w-[min(90vw,800px)] h-[min(60vh,420px)] border-4 border-dashed rounded-2xl ',
-      'bg-white/80 dark:bg-slate-900/70 shadow-2xl ring-1 ring-slate-200 dark:ring-slate-700">',
-        '<i data-lucide="file-plus" class="w-14 h-14 text-slate-500 dark:text-slate-300"></i>',
-        '<p class="text-lg font-semibold text-slate-700 dark:text-slate-100">Suelta para abrir en pestaña nueva</p>',
-        '<p class="text-sm text-slate-500 dark:text-slate-400">Archivos Markdown (.md, .markdown)</p>',
+  // Backdrop: capa que no captura eventos (pointer-events:none)
+  const backdrop = document.createElement('div');
+  backdrop.id = 'drop-backdrop';
+  backdrop.className = [
+    'fixed inset-0 hidden z-[45] drop-dim',
+    'flex items-center justify-center'
+  ].join(' ');
+
+  // Marco interior (no bloquea clics, solo visual)
+  const frame = document.createElement('div');
+  frame.className = [
+    'pointer-events-none relative',
+    'inset-0 w-[min(95vw,1100px)] h-[min(70vh,520px)]',
+    'rounded-2xl border-4 drop-outline border-blue-400/70 dark:border-blue-300/70',
+    'shadow-2xl drop-ants'
+  ].join(' ');
+
+  // Mensaje central con icono
+  const center = document.createElement('div');
+  center.className = 'absolute inset-0 grid place-content-center text-center';
+  center.innerHTML = [
+    '<div class="pointer-events-none px-6 py-5 rounded-xl bg-white/85 dark:bg-slate-900/80 ring-1 ring-slate-200 dark:ring-slate-700">',
+      '<div class="flex flex-col items-center gap-2">',
+        '<i data-lucide="arrow-down-to-line" class="w-14 h-14 text-slate-600 dark:text-slate-200"></i>',
+        '<p class="drop-hint text-lg font-semibold text-slate-800 dark:text-slate-100">Suelta aquí para abrir en una pestaña nueva</p>',
+        '<p class="drop-hint text-sm text-slate-600 dark:text-slate-300">Archivos Markdown (.md, .markdown). También puedes soltar varios.</p>',
       '</div>',
     '</div>'
   ].join('');
-  document.body.appendChild(overlay);
 
-  // Renderiza iconos lucide del overlay
+  backdrop.appendChild(frame);
+  backdrop.appendChild(center);
+  document.body.prepend(backdrop); // "por detrás" del resto al insertarlo primero, aunque se ve encima visualmente
+
+  // Render de iconos lucide si están cargados
   if (window.lucide && typeof window.lucide.createIcons === 'function') {
-    window.lucide.createIcons();
+    window.lucide.createIcons(backdrop);
   }
 
-  // Utilidad: ¿el DataTransfer trae ficheros?
+  // Utilidad: ¿hay archivos en el DataTransfer?
   function hasFiles(e) {
     const dt = e.dataTransfer;
     if (!dt) return false;
@@ -930,11 +948,12 @@ window.onload = () => {
     newTabBtn && newTabBtn.classList.remove('ring-2','ring-blue-500','rounded-md','animate-pulse');
   }
 
+  // Eventos de arrastre globales
   document.addEventListener('dragenter', (e) => {
     if (!hasFiles(e)) return;
     e.preventDefault();
     dragDepth++;
-    overlay.classList.remove('hidden');
+    backdrop.classList.remove('hidden');
     addHalo();
   });
 
@@ -947,14 +966,14 @@ window.onload = () => {
     if (!hasFiles(e)) return;
     dragDepth = Math.max(0, dragDepth - 1);
     if (dragDepth === 0) {
-      overlay.classList.add('hidden');
+      backdrop.classList.add('hidden');
       removeHalo();
     }
   });
 
   function handleDrop(e) {
     e.preventDefault();
-    overlay.classList.add('hidden');
+    backdrop.classList.add('hidden');
     removeHalo();
     dragDepth = 0;
 
@@ -976,13 +995,12 @@ window.onload = () => {
       reader.onload = (ev) => {
         try {
           const content = ev.target?.result || '';
-          // newDoc(name, md) ya crea pestaña y gestiona estado
           const doc = (typeof newDoc === 'function')
             ? newDoc(file.name || 'Sin título', content)
             : null;
 
           if (doc && typeof updateDirtyIndicator === 'function') {
-            doc.lastSaved = content;             // recién abierto => limpio
+            doc.lastSaved = content;
             updateDirtyIndicator(doc.id, false);
           }
         } catch (err) {
@@ -994,6 +1012,6 @@ window.onload = () => {
   }
 
   document.addEventListener('drop', handleDrop);
-  overlay.addEventListener('drop', handleDrop);
+  backdrop.addEventListener('drop', handleDrop);
 })();
 

@@ -75,8 +75,16 @@ body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
 
 .gutter { background-color: #f1f5f9; background-repeat: no-repeat; background-position: 50%; }
 .dark .gutter { background-color: #0f172a; }
-.gutter.gutter-horizontal { cursor: col-resize; background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxl79uzZDCADgEYDAB0AowCgKADlHw4hA2g+ADoApxt/9k+AAAAAElFTkSuQmCC'); }
 
+.gutter.gutter-horizontal {
+    cursor: col-resize;
+    background-repeat: no-repeat;
+    background-position: 50%;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='30' viewBox='0 0 8 30'%3E%3Cpath d='M3 6h2M3 14h2M3 22h2' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+.dark .gutter.gutter-horizontal {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='30' viewBox='0 0 8 30'%3E%3Cpath d='M3 6h2M3 14h2M3 22h2' stroke='%2360a5fa' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+}
 /* Estilos para pestañas */
 .tab {
     border: 1px solid transparent;
@@ -156,3 +164,46 @@ body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
     }
 }
 /* --- FIN DE LAS CORRECCIONES PARA MÓVIL --- */
+
+/* =========================================================
+   Indicador visual de arrastre para soltar .md
+   ========================================================= */
+#drop-backdrop {
+    /* No bloquea clics ni selección */
+    pointer-events: none;
+}
+
+.drop-outline {
+    /* Borde visible estilo "marco" alrededor del viewport interior */
+    border-style: dashed;
+}
+
+.drop-ants {
+    /* Sutil patrón animado en el fondo del marco */
+    background-image:
+        repeating-linear-gradient(90deg, rgba(59,130,246,0.18) 0 12px, transparent 12px 24px),
+        repeating-linear-gradient(0deg,  rgba(59,130,246,0.18) 0 12px, transparent 12px 24px);
+    background-size: 16px 2px, 2px 16px;
+    background-position: 0 0, 0 0;
+    animation: drop-ants-move 12s linear infinite;
+}
+
+@keyframes drop-ants-move {
+    0%   { background-position: 0 0, 0 0; }
+    100% { background-position: 480px 0, 0 480px; }
+}
+
+.drop-hint {
+    text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+}
+
+.drop-dim {
+    /* Capa que oscurece ligeramente toda la página */
+    background: rgba(2,6,23,0.22);
+    /* Efecto "por detrás" gracias al blur del fondo */
+    backdrop-filter: blur(2px);
+}
+.dark .drop-dim {
+    background: rgba(2,6,23,0.35);
+}
+
