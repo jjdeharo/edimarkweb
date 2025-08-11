@@ -878,3 +878,122 @@ window.onload = () => {
         initSearch(markdownEditor, htmlEditor, () => currentLayout);
     }
 };
+
+/* =========================================================
+   Arrastrar y soltar .md con indicación visual de "abrir en pestaña"
+   ========================================================= */
+(function () {
+  // Si existe un overlay anterior, lo retiramos para evitar duplicados
+  const prev = document.getElementById('drop-overlay');
+  if (prev && prev.parentNode) prev.parentNode.removeChild(prev);
+
+  // Overlay a pantalla completa
+  const overlay = document.createElement('div');
+  overlay.id = 'drop-overlay';
+  overlay.className = 'fixed inset-0 hidden z-[60] cursor-copy';
+  overlay.innerHTML = [
+    '<div class="w-full h-full flex items-center justify-center select-none">',
+      // Zona fantasma con borde discontinuo como pista clara de "soltar aquí"
+      '<div class="drop-ghost pointer-events-none flex flex-col items-center justify-center gap-3 ',
+      'w-[min(90vw,800px)] h-[min(60vh,420px)] border-4 border-dashed rounded-2xl ',
+      'bg-white/80 dark:bg-slate-900/70 shadow-2xl ring-1 ring-slate-200 dark:ring-slate-700">',
+        '<i data-lucide="file-plus" class="w-14 h-14 text-slate-500 dark:text-slate-300"></i>',
+        '<p class="text-lg font-semibold text-slate-700 dark:text-slate-100">Suelta para abrir en pestaña nueva</p>',
+        '<p class="text-sm text-slate-500 dark:text-slate-400">Archivos Markdown (.md, .markdown)</p>',
+      '</div>',
+    '</div>'
+  ].join('');
+  document.body.appendChild(overlay);
+
+  // Renderiza iconos lucide del overlay
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
+    window.lucide.createIcons();
+  }
+
+  // Utilidad: ¿el DataTransfer trae ficheros?
+  function hasFiles(e) {
+    const dt = e.dataTransfer;
+    if (!dt) return false;
+    return Array.from(dt.types || []).includes('Files') || (dt.files && dt.files.length > 0);
+  }
+
+  let dragDepth = 0;
+  const tabBar = document.getElementById('tab-bar');
+  const newTabBtn = document.getElementById('new-tab-btn');
+
+  function addHalo() {
+    tabBar && tabBar.classList.add('ring-2','ring-blue-500','ring-offset-2','ring-offset-transparent','animate-pulse');
+    newTabBtn && newTabBtn.classList.add('ring-2','ring-blue-500','rounded-md','animate-pulse');
+  }
+  function removeHalo() {
+    tabBar && tabBar.classList.remove('ring-2','ring-blue-500','ring-offset-2','ring-offset-transparent','animate-pulse');
+    newTabBtn && newTabBtn.classList.remove('ring-2','ring-blue-500','rounded-md','animate-pulse');
+  }
+
+  document.addEventListener('dragenter', (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth++;
+    overlay.classList.remove('hidden');
+    addHalo();
+  });
+
+  document.addEventListener('dragover', (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+  });
+
+  document.addEventListener('dragleave', (e) => {
+    if (!hasFiles(e)) return;
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (dragDepth === 0) {
+      overlay.classList.add('hidden');
+      removeHalo();
+    }
+  });
+
+  function handleDrop(e) {
+    e.preventDefault();
+    overlay.classList.add('hidden');
+    removeHalo();
+    dragDepth = 0;
+
+    const files = Array.from(e.dataTransfer?.files || []);
+    if (!files.length) return;
+
+    const mdFiles = files.filter(f => {
+      const name = (f.name || '').toLowerCase();
+      return /\.md$|\.markdown$/.test(name) || (f.type && f.type === 'text/markdown');
+    });
+
+    if (!mdFiles.length) {
+      alert('Solo se pueden soltar archivos Markdown (.md/.markdown)');
+      return;
+    }
+
+    mdFiles.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const content = ev.target?.result || '';
+          // newDoc(name, md) ya crea pestaña y gestiona estado
+          const doc = (typeof newDoc === 'function')
+            ? newDoc(file.name || 'Sin título', content)
+            : null;
+
+          if (doc && typeof updateDirtyIndicator === 'function') {
+            doc.lastSaved = content;             // recién abierto => limpio
+            updateDirtyIndicator(doc.id, false);
+          }
+        } catch (err) {
+          console.error('No se pudo abrir el archivo arrastrado:', err);
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  document.addEventListener('drop', handleDrop);
+  overlay.addEventListener('drop', handleDrop);
+})();
+
