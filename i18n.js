@@ -16,16 +16,21 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-i18n-key]').forEach(element => {
       const key = element.getAttribute('data-i18n-key');
       if (translations[key]) {
+        const translation = translations[key];
+
         if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
           if(element.placeholder) {
-            element.placeholder = translations[key];
+            element.placeholder = translation;
           }
-        } else if (element.title) {
-            element.title = translations[key];
-        } else if (element.getAttribute('aria-label')) {
-            element.setAttribute('aria-label', translations[key]);
+        } else if (element.hasAttribute('title')) {
+            element.title = translation;
+        } else if (element.hasAttribute('aria-label')) {
+            element.setAttribute('aria-label', translation);
         } else {
-            element.textContent = translations[key];
+            // Only update textContent if there are no child elements (like icons)
+            if (element.children.length === 0) {
+                element.textContent = translation;
+            }
         }
       }
     });
