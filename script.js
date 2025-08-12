@@ -536,6 +536,7 @@ window.onload = () => {
 
     function applyTheme(theme) {
       document.documentElement.classList.toggle('dark', theme === 'dark');
+      document.documentElement.style.colorScheme = theme;
       localStorage.setItem('theme', theme);
       const newEditorTheme = theme === 'dark' ? 'material-darker' : 'eclipse';
       markdownEditor.setOption('theme', newEditorTheme);

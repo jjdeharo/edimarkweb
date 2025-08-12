@@ -24,9 +24,8 @@ La aplicación te permite trabajar con varios documentos a la vez utilizando un 
 * **Cambiar de pestaña**. Haz clic en cualquier pestaña para ver su contenido. También puedes usar `Ctrl+Tab` para ciclar entre ellas (`Ctrl+Shift+Tab` para ir en sentido inverso).
 * **Renombrar pestañas**. Haz doble clic sobre el nombre de una pestaña para editarlo. El nuevo nombre se usará como sugerencia al guardar el archivo.
 * **Cerrar pestañas**. Pulsa la `X` que aparece en cada pestaña o usa el atajo `Ctrl+W`. Si hay cambios sin guardar, la aplicación te pedirá confirmación.
-* **Cambios sin guardar**. Un punto rojo (●) junto al nombre del documento indica que hay cambios pendientes de guardar. El punto desaparece cuando guardas el archivo.
+* **Cambios sin guardar**. Un punto rojo (`●`) junto al nombre del documento indica que hay cambios pendientes de guardar. El punto desaparece cuando guardas el archivo.
 * **Autoguardado**. Cada pestaña guarda su contenido automáticamente en la memoria del navegador para evitar pérdidas accidentales.
-* **Cargar un archivo**. Puedes cargar un archivo con el icono *Abrir* o arrastando y soltando uno encima.
 
 ---
 
@@ -77,20 +76,19 @@ El panel de previsualización no es solo para ver, también puedes interactuar c
 | Acción | Atajo (Windows/Linux) | Atajo (macOS) |
 | :--- | :--- | :--- |
 | **Formato** | | |
-| Negrita | Ctrl + B | Cmd + B |
-| Cursiva | Ctrl + I | Cmd + I |
+| Negrita | `Ctrl` + `B` | `Cmd` + `B` |
+| Cursiva | `Ctrl` + `I` | `Cmd` + `I` |
 | **Gestión de documentos** | | |
-| Nueva pestaña | Ctrl + T | Cmd + T |
-| Cerrar pestaña | Ctrl + W | Cmd + W |
-| Cambiar de pestaña | Ctrl + Tab | Cmd + Tab |
-| Guardar | Ctrl + S | Cmd + S |
-| Imprimir | Ctrl + P | Cmd + P |
-| Abrir manual | Ctrl + H | Cmd + H |
+| Nueva pestaña | `Ctrl` + `T` | `Cmd` + `T` |
+| Cerrar pestaña | `Ctrl` + `W` | `Cmd` + `W` |
+| Cambiar de pestaña | `Ctrl` + `Tab` | `Cmd` + `Tab` |
+| Guardar | `Ctrl` + `S` | `Cmd` + `S` |
+| Imprimir | `Ctrl` + `P` | `Cmd` + `P` |
+| Abrir manual | `Ctrl` + `H` | `Cmd` + `H` |
 | **Interfaz** | | |
-| Cambiar diseño | Ctrl + L | Cmd + L |
-| Aumentar tamaño | Ctrl + + | Cmd + + |
-| Reducir tamaño | Ctrl + - | Cmd + - |
-
+| Cambiar diseño | `Ctrl` + `L` | `Cmd` + `L` |
+| Aumentar tamaño | `Ctrl` + `+` | `Cmd` + `+` |
+| Reducir tamaño | `Ctrl` + `-` | `Cmd` + `-` |
 
 ---
 

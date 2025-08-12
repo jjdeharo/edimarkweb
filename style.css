@@ -18,7 +18,7 @@ body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
 .panel { min-width: 280px; }
 
 .CodeMirror, .editor-pane {
-    height: calc(100vh - 22rem); /* Ajustado para la barra de pestañas y búsqueda */
+    height: calc(100vh - 22rem); /* Ajustado para la arra de pestañas y búsqueda */
     border: 1px solid #e2e8f0;
     border-radius: 0.5rem;
     font-size: var(--fs-base); /* Usa la variable CSS para el tamaño */
@@ -205,5 +205,42 @@ body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
 }
 .dark .drop-dim {
     background: rgba(2,6,23,0.35);
+}
+
+/* Controles de búsqueda y modales: respetan el tema de la app */
+#search-input, #replace-input,
+[id$="-modal-overlay"] input[type="text"],
+[id$="-modal-overlay"] input[type="url"],
+[id$="-modal-overlay"] input[type="number"],
+[id$="-modal-overlay"] textarea {
+  color: #0f172a;            /* texto en claro */
+  background-color: #ffffff; /* fondo en claro */
+  caret-color: #0f172a;      /* cursor visible */
+  color-scheme: light;       /* nativo en claro */
+}
+#search-input::placeholder, #replace-input::placeholder,
+[id$="-modal-overlay"] input[type="text"]::placeholder,
+[id$="-modal-overlay"] input[type="url"]::placeholder,
+[id$="-modal-overlay"] input[type="number"]::placeholder,
+[id$="-modal-overlay"] textarea::placeholder {
+  color: #64748b; /* slate-500, buena legibilidad en claro */
+}
+
+.dark #search-input, .dark #replace-input,
+.dark [id$="-modal-overlay"] input[type="text"],
+.dark [id$="-modal-overlay"] input[type="url"],
+.dark [id$="-modal-overlay"] input[type="number"],
+.dark [id$="-modal-overlay"] textarea {
+  color: #e2e8f0;            /* texto en oscuro */
+  background-color: #1e293b; /* fondo en oscuro */
+  caret-color: #e2e8f0;      /* cursor visible */
+  color-scheme: dark;        /* nativo en oscuro */
+}
+.dark #search-input::placeholder, .dark #replace-input::placeholder,
+.dark [id$="-modal-overlay"] input[type="text"]::placeholder,
+.dark [id$="-modal-overlay"] input[type="url"]::placeholder,
+.dark [id$="-modal-overlay"] input[type="number"]::placeholder,
+.dark [id$="-modal-overlay"] textarea::placeholder {
+  color: #94a3b8; /* slate-300/400, legible en oscuro */
 }
 
