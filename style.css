@@ -1,3 +1,249 @@
+/* --- INICIO: Estilos para expandir --- */
+#main-container {
+    transition: max-width 0.5s ease-in-out;
+}
+
+#main-container.is-expanded {
+    max-width: 98%;
+}
+/* --- FIN: Estilos para expandir --- */
+
+/* Estilos personalizados */
+:root { --fs-base: 16px; } /* Valor por defecto para el tamaño de fuente */
+
+body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+.dark body { background-color: #0f172a; }
+
+.editor-wrapper { display: flex; }
+.panel { min-width: 280px; }
+
+.CodeMirror, .editor-pane {
+    height: calc(100vh - 22rem); /* Ajustado para la arra de pestañas y búsqueda */
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    font-size: var(--fs-base); /* Usa la variable CSS para el tamaño */
+}
+.dark .CodeMirror, .dark .editor-pane { border-color: #334155; }
+
+.CodeMirror-focused {
+    outline: none;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4) !important;
+}
+.dark .CodeMirror-focused { border-color: #60a5fa !important; }
+
+.editor-pane { padding: 1rem; overflow-y: auto; background-color: #ffffff; }
+.dark .editor-pane { background-color: #1e293b; color: #cbd5e1; }
+.dark .prose { color: #cbd5e1; }
+.dark .prose h1, .dark .prose h2, .dark .prose h3, .dark .prose strong { color: #f1f5f9; }
+.dark .prose code { color: #e2e8f0; }
+.dark .prose blockquote { border-left-color: #475569; color: #94a3b8;}
+.dark .prose a { color: #93c5fd; }
+
+/* Estilo para enlaces con Ctrl/Cmd presionado */
+#html-output a.ctrl-hover {
+    text-decoration: underline;
+    color: #2563eb; /* Tailwind blue-600 */
+    cursor: pointer;
+}
+.dark #html-output a.ctrl-hover {
+    color: #60a5fa; /* Tailwind blue-400 */
+}
+
+
+.action-btn {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem;
+    border-radius: 0.375rem; color: #475569; background-color: transparent;
+    transition: background-color 0.2s, color 0.2s;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+.action-btn:hover { background-color: #f1f5f9; color: #1e293b; }
+.dark .action-btn { color: #94a3b8; }
+.dark .action-btn:hover { background-color: #1e293b; color: #e2e8f0; }
+.dark select.action-btn { background-color: #0f172a; }
+
+
+.toolbar-btn, .copy-btn {
+    padding: 0.5rem; border-radius: 0.375rem; color: #475569;
+    transition: background-color 0.2s, color 0.2s;
+}
+.toolbar-btn:hover, .copy-btn:hover { background-color: #e2e8f0; color: #1e293b; }
+.dark .toolbar-btn, .dark .copy-btn { color: #94a3b8; }
+.dark .toolbar-btn:hover, .dark .copy-btn:hover { background-color: #334155; color: #e2e8f0; }
+
+.gutter { background-color: #f1f5f9; background-repeat: no-repeat; background-position: 50%; }
+.dark .gutter { background-color: #0f172a; }
+
+.gutter.gutter-horizontal {
+    cursor: col-resize;
+    background-repeat: no-repeat;
+    background-position: 50%;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='30' viewBox='0 0 8 30'%3E%3Cpath d='M3 6h2M3 14h2M3 22h2' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+.dark .gutter.gutter-horizontal {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='30' viewBox='0 0 8 30'%3E%3Cpath d='M3 6h2M3 14h2M3 22h2' stroke='%2360a5fa' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+/* Estilos para pestañas */
+.tab {
+    border: 1px solid transparent;
+    border-bottom: 1px solid #e2e8f0;
+    background-color: #f1f5f9;
+    color: #475569;
+}
+.dark .tab {
+    border-bottom: 1px solid #334155;
+    background-color: #1e293b;
+    color: #94a3b8;
+}
+.tab[aria-selected="true"] {
+    background-color: white;
+    border-color: #e2e8f0;
+    border-bottom-color: transparent;
+    color: #1e293b;
+}
+.dark .tab[aria-selected="true"] {
+    background-color: #0f172a;
+    border-color: #334155;
+    border-bottom-color: transparent;
+    color: #f1f5f9;
+}
+.tab-close {
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+.tab:hover .tab-close {
+    opacity: 1;
+}
+
+/* --- INICIO DE ESTILOS PARA LA BÚSQUEDA --- */
+.cm-s-eclipse .cm-search-highlight,
+.cm-s-material-darker .cm-search-highlight {
+    background-color: rgba(253, 224, 71, 0.5); /* Amarillo traslúcido para todas las coincidencias */
+    color: inherit !important;
+}
+
+/* Estilo para la coincidencia actualmente seleccionada */
+.cm-s-eclipse .cm-search-current,
+.cm-s-material-darker .cm-search-current {
+    background-color: #fb923c; /* Naranja para la coincidencia activa */
+}
+/* --- FIN DE ESTILOS PARA LA BÚSQUEDA --- */
+
+
+/* --- INICIO DE LAS CORRECCIONES PARA MÓVIL --- */
+@media (max-width: 768px) {
+    .editor-wrapper {
+        flex-direction: column;
+    }
+
+    .panel {
+        width: 100% !important;
+    }
+
+    .CodeMirror, .editor-pane {
+       height: 40vh;
+    }
+    
+    /* Regla para que los botones de la cabecera salten de línea */
+    header > div:nth-child(2) {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+    
+    /* Regla para que las pestañas también salten de línea */
+    #tab-bar {
+        flex-wrap: wrap;
+    }
+
+    /* Alinea al inicio el contenedor y el botón nuevo para que no se corte el punto */
+    #tab-bar,
+    #new-tab-btn {
+        align-self: flex-start;
+    }
+}
+/* --- FIN DE LAS CORRECCIONES PARA MÓVIL --- */
+
+/* =========================================================
+   Indicador visual de arrastre para soltar .md
+   ========================================================= */
+#drop-backdrop {
+    /* No bloquea clics ni selección */
+    pointer-events: none;
+}
+
+.drop-outline {
+    /* Borde visible estilo "marco" alrededor del viewport interior */
+    border-style: dashed;
+}
+
+.drop-ants {
+    /* Sutil patrón animado en el fondo del marco */
+    background-image:
+        repeating-linear-gradient(90deg, rgba(59,130,246,0.18) 0 12px, transparent 12px 24px),
+        repeating-linear-gradient(0deg,  rgba(59,130,246,0.18) 0 12px, transparent 12px 24px);
+    background-size: 16px 2px, 2px 16px;
+    background-position: 0 0, 0 0;
+    animation: drop-ants-move 12s linear infinite;
+}
+
+@keyframes drop-ants-move {
+    0%   { background-position: 0 0, 0 0; }
+    100% { background-position: 480px 0, 0 480px; }
+}
+
+.drop-hint {
+    text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+}
+
+.drop-dim {
+    /* Capa que oscurece ligeramente toda la página */
+    background: rgba(2,6,23,0.22);
+    /* Efecto "por detrás" gracias al blur del fondo */
+    backdrop-filter: blur(2px);
+}
+.dark .drop-dim {
+    background: rgba(2,6,23,0.35);
+}
+
+/* Controles de búsqueda y modales: respetan el tema de la app */
+#search-input, #replace-input,
+[id$="-modal-overlay"] input[type="text"],
+[id$="-modal-overlay"] input[type="url"],
+[id$="-modal-overlay"] input[type="number"],
+[id$="-modal-overlay"] textarea {
+  color: #0f172a;            /* texto en claro */
+  background-color: #ffffff; /* fondo en claro */
+  caret-color: #0f172a;      /* cursor visible */
+  color-scheme: light;       /* nativo en claro */
+}
+#search-input::placeholder, #replace-input::placeholder,
+[id$="-modal-overlay"] input[type="text"]::placeholder,
+[id$="-modal-overlay"] input[type="url"]::placeholder,
+[id$="-modal-overlay"] input[type="number"]::placeholder,
+[id$="-modal-overlay"] textarea::placeholder {
+  color: #64748b; /* slate-500, buena legibilidad en claro */
+}
+
+.dark #search-input, .dark #replace-input,
+.dark [id$="-modal-overlay"] input[type="text"],
+.dark [id$="-modal-overlay"] input[type="url"],
+.dark [id$="-modal-overlay"] input[type="number"],
+.dark [id$="-modal-overlay"] textarea {
+  color: #e2e8f0;            /* texto en oscuro */
+  background-color: #1e293b; /* fondo en oscuro */
+  caret-color: #e2e8f0;      /* cursor visible */
+  color-scheme: dark;        /* nativo en oscuro */
+}
+.dark #search-input::placeholder, .dark #replace-input::placeholder,
+.dark [id$="-modal-overlay"] input[type="text"]::placeholder,
+.dark [id$="-modal-overlay"] input[type="url"]::placeholder,
+.dark [id$="-modal-overlay"] input[type="number"]::placeholder,
+.dark [id$="-modal-overlay"] textarea::placeholder {
+  color: #94a3b8; /* slate-300/400, legible en oscuro */
+}
+
 code {
   background-color: #f4f4f4;
   padding: 2px 4px;
