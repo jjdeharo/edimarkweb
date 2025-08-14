@@ -66,5 +66,7 @@
   "insert_btn": "Inserir",
   "insert_image_modal_title": "Inserir imaxe",
   "image_alt_text_label": "Texto alternativo",
-  "image_url_label": "URL da imaxe"
+  "image_url_label": "URL da imaxe",
+  "drop_title": "Solta aquí para abrir nunha nova lapela",
+  "drop_subtitle": "Ficheiros Markdown (.md, .markdown). Tamén podes soltar varios ficheiros."
 }

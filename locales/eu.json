@@ -66,5 +66,7 @@
   "insert_btn": "Txertatu",
   "insert_image_modal_title": "Txertatu irudia",
   "image_alt_text_label": "Testu alternatiboa",
-  "image_url_label": "Irudiaren URLa"
+  "image_url_label": "Irudiaren URLa",
+  "drop_title": "Utzi hemen fitxa berri batean irekitzeko",
+  "drop_subtitle": "Markdown fitxategiak (.md, .markdown). Hainbat fitxategi ere utz ditzakezu."
 }

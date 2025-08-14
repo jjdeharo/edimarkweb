@@ -66,5 +66,7 @@
   "insert_btn": "Insert",
   "insert_image_modal_title": "Insert image",
   "image_alt_text_label": "Alt text",
-  "image_url_label": "Image URL"
+  "image_url_label": "Image URL",
+  "drop_title": "Drop here to open in a new tab",
+  "drop_subtitle": "Markdown files (.md, .markdown). You can also drop multiple files."
 }

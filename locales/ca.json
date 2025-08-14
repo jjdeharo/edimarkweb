@@ -66,5 +66,7 @@
   "insert_btn": "Inserir",
   "insert_image_modal_title": "Inserir imatge",
   "image_alt_text_label": "Text alternatiu",
-  "image_url_label": "URL de la imatge"
+  "image_url_label": "URL de la imatge",
+  "drop_title": "Deixa anar aquí per obrir en una nova pestanya",
+  "drop_subtitle": "Fitxers Markdown (.md, .markdown). També pots deixar anar diversos fitxers."
 }

@@ -1,4 +1,3 @@
-
 {
   "title": "EdiMarkWeb: Editor Markdown &harr; HTML con LaTeX",
   "h1": "EdiMarkWeb",
@@ -67,5 +66,7 @@
   "insert_btn": "Insertar",
   "insert_image_modal_title": "Insertar imagen",
   "image_alt_text_label": "Texto alternativo",
-  "image_url_label": "URL de la imagen"
+  "image_url_label": "URL de la imagen",
+  "drop_title": "Suelta aquí para abrir en una pestaña nueva",
+  "drop_subtitle": "Archivos Markdown (.md, .markdown). También puedes soltar varios."
 }

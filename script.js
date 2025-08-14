@@ -204,7 +204,7 @@ function updateHtml() {
     const markdownText = markdownEditor.getValue();
     const htmlOutput = document.getElementById('html-output');
     
-    const sanitizedText = markdownText.replace(/\\\\/g, '\\\\\\\\').replace(/\\\[/g, '\\\\[').replace(/\\\]/g, '\\\\]').replace(/\\\(/g, '\\\\(').replace(/\\\)/g, '\\\\)');
+    const sanitizedText = markdownText.replace(/`/g, '\`').replace(/\\/g, '\\\\').replace(/\\\[/g, '\\\\[').replace(/\\\]/g, '\\\\\]').replace(/\\\(/g, '\\\\(').replace(/\\\)/g, '\\\\)');
     
     if (window.marked) {
         const rawHtml = marked.parse(sanitizedText);
@@ -212,7 +212,7 @@ function updateHtml() {
 
         htmlOutput.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(h => {
           if (!h.id) {
-            h.id = h.textContent.trim().toLowerCase().replace(/\s+/g,'-').replace(/[^\w\-áéíóúüñ]/g,'');
+            h.id = h.textContent.trim().toLowerCase().replace(/\\s+/g,'-').replace(/[^\\w\\-áéíóúüñ]/g,'');
           }
         });
 
@@ -273,10 +273,10 @@ function applyFormat(format) {
           }
           break;
         case 'code':
-          if (hadSelection) markdownEditor.replaceSelection(`\`${selectedText}\`` , 'around');
+          if (hadSelection) markdownEditor.replaceSelection(`\`\`\`\n${selectedText}\n\`\`\`` , 'around');
           else {
-            markdownEditor.replaceSelection('``');
-            markdownEditor.setCursor({ line: cursor.line, ch: cursor.ch + 1 });
+            markdownEditor.replaceSelection('\`\`\`\n\n\`\`\`');
+            markdownEditor.setCursor({ line: cursor.line + 1, ch: 0 });
           }
           break;
         case 'latex-inline':
@@ -400,7 +400,7 @@ function buildHtmlWithTex() {
   clone.querySelectorAll('span.katex').forEach(span => {
     if (span.closest('.katex-display')) return;
     const tex = span.querySelector('annotation[encoding="application/x-tex"]')?.textContent || '';
-    span.replaceWith(document.createTextNode(`\\(${tex}\\)`));
+    span.replaceWith(document.createTextNode(`$${tex}$`));
   });
   return clone.innerHTML;
 }
@@ -670,7 +670,7 @@ window.onload = () => {
         document.body.appendChild(iframe);
         const doc = iframe.contentWindow.document;
         doc.open();
-        doc.write(`<!DOCTYPE html><html><head><title>Imprimir</title><script src="https://cdn.tailwindcss.com?plugins=typography"><\/script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"><style>body { margin: 1.5rem; -webkit-print-color-adjust: exact; print-color-adjust: exact; }<\/style></head><body class="prose max-w-none">${printContent}</body></html>`);
+        doc.write(`<!DOCTYPE html><html><head><title>Imprimir</title><script src="https://cdn.tailwindcss.com?plugins=typography"><\/script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"><style>body { margin: 1.5rem; -webkit-print-color-adjust: exact; print-color-adjust: exact; }<\/style></head><body class="prose max-w-none">${printContent}<od></html>`);
         doc.close();
         setTimeout(() => {
             iframe.contentWindow.print();
@@ -706,7 +706,7 @@ window.onload = () => {
         const isMd = document.getElementById('format-md').checked;
         const extension = isMd ? '.md' : '.html';
         if (!filename.endsWith(extension)) filename += extension;
-        const content = isMd ? markdownEditor.getValue() : `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>${filename.replace(/\.html$/, '')}</title><script src="https://cdn.tailwindcss.com?plugins=typography"><\/script><script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"><\/script><style>body { margin: 2rem; } .prose { max-width: 80ch; margin: auto; } </style></head><body class="prose max-w-none">${buildHtmlWithTex()}</body></html>`;
+        const content = isMd ? markdownEditor.getValue() : `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>${filename.replace(/\.(md|html)$/i, '')}</title><script src="https://cdn.tailwindcss.com?plugins=typography"><\/script><script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"><\/script><style>body { margin: 2rem; } .prose { max-width: 80ch; margin: auto; } <\/style></head><body class="prose max-w-none">${buildHtmlWithTex()}</body></html>`;
         saveFile(filename, content, isMd ? 'text/markdown;charset=utf-8' : 'text/html;charset=utf-8');
         const doc = docs.find(d => d.id === currentId);
         if (doc) {
@@ -910,15 +910,15 @@ window.onload = () => {
   // Mensaje central con icono
   const center = document.createElement('div');
   center.className = 'absolute inset-0 grid place-content-center text-center';
-  center.innerHTML = [
-    '<div class="pointer-events-none px-6 py-5 rounded-xl bg-white/85 dark:bg-slate-900/80 ring-1 ring-slate-200 dark:ring-slate-700">',
-      '<div class="flex flex-col items-center gap-2">',
-        '<i data-lucide="arrow-down-to-line" class="w-14 h-14 text-slate-600 dark:text-slate-200"></i>',
-        '<p class="drop-hint text-lg font-semibold text-slate-800 dark:text-slate-100">Suelta aquí para abrir en una pestaña nueva</p>',
-        '<p class="drop-hint text-sm text-slate-600 dark:text-slate-300">Archivos Markdown (.md, .markdown). También puedes soltar varios.</p>',
-      '</div>',
-    '</div>'
-  ].join('');
+  center.innerHTML = `
+    <div class="pointer-events-none px-6 py-5 rounded-xl bg-white/85 dark:bg-slate-900/80 ring-1 ring-slate-200 dark:ring-slate-700">
+      <div class="flex flex-col items-center gap-2">
+        <i data-lucide="arrow-down-to-line" class="w-14 h-14 text-slate-600 dark:text-slate-200"></i>
+        <p class="drop-hint text-lg font-semibold text-slate-800 dark:text-slate-100" data-i18n-key="drop_title">Suelta aquí para abrir en una pestaña nueva</p>
+        <p class="drop-hint text-sm text-slate-600 dark:text-slate-300" data-i18n-key="drop_subtitle">Archivos Markdown (.md, .markdown). También puedes soltar varios.</p>
+      </div>
+    </div>
+  `;
 
   backdrop.appendChild(frame);
   backdrop.appendChild(center);
@@ -983,7 +983,7 @@ window.onload = () => {
 
     const mdFiles = files.filter(f => {
       const name = (f.name || '').toLowerCase();
-      return /\.md$|\.markdown$/.test(name) || (f.type && f.type === 'text/markdown');
+      return /\\.md$|\\.markdown$/.test(name) || (f.type && f.type === 'text/markdown');
     });
 
     if (!mdFiles.length) {
@@ -1015,4 +1015,3 @@ window.onload = () => {
   document.addEventListener('drop', handleDrop);
   backdrop.addEventListener('drop', handleDrop);
 })();
-
