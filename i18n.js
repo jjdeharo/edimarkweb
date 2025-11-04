@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const response = await fetch(`locales/${lang}.json`);
     const translations = await response.json();
 
+    window.__edimarkTranslations = translations;
+    window.__edimarkLang = lang;
+
     document.querySelectorAll('[data-i18n-key]').forEach(element => {
       const key = element.getAttribute('data-i18n-key');
       if (translations[key]) {

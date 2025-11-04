@@ -14,23 +14,117 @@
 body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
 .dark body { background-color: #0f172a; }
 
+body.desktop-mode {
+    padding: 0 !important;
+}
+.dark body.desktop-mode {
+    background-color: #0f172a;
+}
+
+body.desktop-mode #main-container {
+    max-width: none;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    min-height: 100vh;
+    border: none;
+}
+
 .editor-wrapper { display: flex; }
 .panel { min-width: 280px; }
 
-.CodeMirror, .editor-pane {
+.CodeMirror, .editor-pane, .markdown-textarea {
     height: calc(100vh - 22rem); /* Ajustado para la arra de pestañas y búsqueda */
     border: 1px solid #e2e8f0;
     border-radius: 0.5rem;
     font-size: var(--fs-base); /* Usa la variable CSS para el tamaño */
 }
-.dark .CodeMirror, .dark .editor-pane { border-color: #334155; }
+.dark .CodeMirror, .dark .editor-pane, .dark .markdown-textarea { border-color: #334155; }
 
-.CodeMirror-focused {
+.CodeMirror-focused, .markdown-textarea:focus {
     outline: none;
     border-color: #3b82f6 !important;
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4) !important;
 }
-.dark .CodeMirror-focused { border-color: #60a5fa !important; }
+.dark .CodeMirror-focused, .dark .markdown-textarea:focus { border-color: #60a5fa !important; }
+
+.markdown-textarea {
+    width: 100%;
+    padding: 1rem;
+    resize: none;
+    background-color: transparent;
+    color: #1f2937;
+    font-family: 'Fira Code', 'JetBrains Mono', 'Menlo', monospace;
+    line-height: 1.5;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 1;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+.markdown-textarea::selection {
+    background-color: rgba(251, 146, 60, 0.65);
+    color: inherit;
+}
+.markdown-textarea-wrapper {
+    position: relative;
+    height: 100%;
+}
+
+.markdown-textarea-highlights {
+    position: absolute;
+    inset: 0;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    pointer-events: none;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow: hidden;
+    font-size: var(--fs-base);
+    font-family: 'Fira Code', 'JetBrains Mono', 'Menlo', monospace;
+    line-height: 1.5;
+    background-color: #ffffff;
+    color: transparent;
+    z-index: 0;
+}
+.markdown-textarea-highlights-content {
+    margin: 0;
+    min-height: 100%;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font: inherit;
+    padding: 0;
+}
+.markdown-textarea-highlights mark {
+    background-color: rgba(253, 224, 71, 0.45);
+    border-radius: 0.25rem;
+    color: transparent;
+}
+.markdown-textarea-highlights mark.current {
+    background-color: #fb923c;
+    color: transparent;
+}
+.dark .markdown-textarea {
+    color: #cbd5e1;
+}
+.markdown-textarea-dark {
+    color: #cbd5e1;
+}
+.dark .markdown-textarea::selection,
+.markdown-textarea-dark::selection {
+    background-color: rgba(14, 165, 233, 0.65);
+}
+.dark .markdown-textarea-highlights,
+.markdown-textarea-highlights.markdown-textarea-dark {
+    background-color: #1e293b;
+}
+.dark .markdown-textarea-highlights mark,
+.markdown-textarea-highlights.markdown-textarea-dark mark {
+    background-color: rgba(59, 130, 246, 0.35);
+}
+.dark .markdown-textarea-highlights mark.current,
+.markdown-textarea-highlights.markdown-textarea-dark mark.current {
+    background-color: rgba(14, 165, 233, 0.5);
+}
 
 .editor-pane { padding: 1rem; overflow-y: auto; background-color: #ffffff; }
 .dark .editor-pane { background-color: #1e293b; color: #cbd5e1; }
@@ -142,7 +236,7 @@ body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
         width: 100% !important;
     }
 
-    .CodeMirror, .editor-pane {
+    .CodeMirror, .editor-pane, .markdown-textarea {
        height: 40vh;
     }
     

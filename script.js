@@ -7,11 +7,612 @@ const AUTOSAVE_KEY_PREFIX = 'edimarkweb-autosave';
 const DOCS_LIST_KEY = 'edimarkweb-docslist';
 const LAYOUT_KEY = 'edimarkweb-layout';
 const FS_KEY = 'edimarkweb-fontsize';
+const EDICUATEX_BASE_URL = 'https://jjdeharo.github.io/edicuatex/index.html';
+const DESKTOP_PARAM_KEY = 'desktop';
+const DESKTOP_SPAWNED_KEY = 'desktop_spawned';
+
+let edicuatexWindow = null;
+let edicuatexOrigin = null;
+let desktopWindow = null;
+let desktopWindowMonitor = null;
+const DESKTOP_SIZE_KEY = 'edimarkweb-desktop-size';
+
+function normalizeNewlines(str) {
+    if (typeof str !== 'string' || str.length < 1) return typeof str === 'string' ? str : '';
+    return str.replace(/\r\n?/g, '\n');
+}
 
 let docs = [];
 let currentId = null;
 let currentLayout;
 let syncEnabled = true;
+
+function getTranslation(key, fallback) {
+    const catalog = window.__edimarkTranslations;
+    if (catalog && Object.prototype.hasOwnProperty.call(catalog, key)) {
+        return catalog[key];
+    }
+    return fallback;
+}
+
+function createTextareaEditor(textarea) {
+    textarea.value = normalizeNewlines(textarea.value || '');
+    textarea.classList.add('markdown-textarea');
+    textarea.setAttribute('spellcheck', 'true');
+    textarea.setAttribute('wrap', 'soft');
+
+    const parent = textarea.parentNode;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'markdown-textarea-wrapper';
+    if (parent) {
+        parent.insertBefore(wrapper, textarea);
+        wrapper.appendChild(textarea);
+    }
+
+    const highlightLayer = document.createElement('div');
+    highlightLayer.className = 'markdown-textarea-highlights';
+    const highlightContent = document.createElement('pre');
+    highlightContent.className = 'markdown-textarea-highlights-content';
+    highlightContent.setAttribute('aria-hidden', 'true');
+    highlightContent.innerHTML = '&#8203;';
+    highlightLayer.appendChild(highlightContent);
+    wrapper.insertBefore(highlightLayer, textarea);
+
+    const changeHandlers = new Set();
+    const INDENT = '  ';
+    let highlightMatches = [];
+    let highlightCurrent = -1;
+    let highlightQuery = '';
+
+    function normalizeTextareaContent() {
+        const value = textarea.value;
+        if (!value.includes('\r')) return value;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const scrollTop = textarea.scrollTop;
+        const scrollLeft = textarea.scrollLeft;
+        const beforeStart = value.slice(0, start);
+        const beforeEnd = value.slice(0, end);
+        const normalizedValue = normalizeNewlines(value);
+        const normalizedBeforeStart = normalizeNewlines(beforeStart);
+        const normalizedBeforeEnd = normalizeNewlines(beforeEnd);
+        const removedBeforeStart = beforeStart.length - normalizedBeforeStart.length;
+        const removedBeforeEnd = beforeEnd.length - normalizedBeforeEnd.length;
+        textarea.value = normalizedValue;
+        const newStart = Math.max(0, start - removedBeforeStart);
+        const newEnd = Math.max(0, end - removedBeforeEnd);
+        textarea.setSelectionRange(newStart, newEnd);
+        textarea.scrollTop = scrollTop;
+        textarea.scrollLeft = scrollLeft;
+        return normalizedValue;
+    }
+
+    function getValue() {
+        return normalizeTextareaContent();
+    }
+
+    function clampOffset(offset) {
+        return Math.max(0, Math.min(offset, getValue().length));
+    }
+
+    function offsetToPos(offset) {
+        const text = getValue();
+        const safeOffset = clampOffset(offset);
+        let line = 0;
+        let ch = 0;
+        for (let i = 0; i < safeOffset; i += 1) {
+            if (text.charCodeAt(i) === 10) {
+                line += 1;
+                ch = 0;
+            } else {
+                ch += 1;
+            }
+        }
+        return { line, ch };
+    }
+
+    function posToOffset(pos) {
+        if (!pos) return 0;
+        const text = getValue();
+        const { line = 0, ch = 0 } = pos;
+        let currentLine = 0;
+        let offset = 0;
+        for (let i = 0; i < text.length; i += 1) {
+            if (currentLine === line) {
+                return clampOffset(offset + ch);
+            }
+            if (text.charCodeAt(i) === 10) {
+                currentLine += 1;
+                offset = i + 1;
+            }
+        }
+        if (line === currentLine) {
+            return clampOffset(offset + ch);
+        }
+        return clampOffset(offset);
+    }
+
+    function escapeHtml(str) {
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function buildAccentInsensitiveSource(query) {
+        return query.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
+            .replace(/a/gi, match => match === 'A' ? '[AÀÁÂÄ]' : '[aàáâä]')
+            .replace(/e/gi, match => match === 'E' ? '[EÈÉÊË]' : '[eèéêë]')
+            .replace(/i/gi, match => match === 'I' ? '[IÌÍÎÏ]' : '[iìíîï]')
+            .replace(/o/gi, match => match === 'O' ? '[OÒÓÔÖ]' : '[oòóôö]')
+            .replace(/u/gi, match => match === 'U' ? '[UÙÚÛÜ]' : '[uùúûü]')
+            .replace(/n/gi, match => match === 'N' ? '[NÑ]' : '[nñ]');
+    }
+
+    function computeHighlights(query) {
+        if (!query) return [];
+        const source = buildAccentInsensitiveSource(query);
+        if (!source) return [];
+        const regex = new RegExp(source, 'gi');
+        const text = textarea.value;
+        const matches = [];
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+            const start = match.index;
+            const end = start + (match[0]?.length || 0);
+            if (end > start) {
+                matches.push({ start, end });
+            }
+            if (regex.lastIndex === match.index) {
+                regex.lastIndex += 1;
+            }
+        }
+        return matches;
+    }
+
+    function renderHighlights() {
+        const text = textarea.value || '';
+        if (!highlightMatches.length) {
+            highlightContent.innerHTML = text ? escapeHtml(text) : '&#8203;';
+            highlightLayer.classList.remove('has-highlights');
+            syncScroll();
+            return;
+        }
+        let html = '';
+        let last = 0;
+        highlightMatches.forEach((match, idx) => {
+            const start = Math.max(0, Math.min(match.start, text.length));
+            const end = Math.max(start, Math.min(match.end, text.length));
+            if (end <= start) return;
+            html += escapeHtml(text.slice(last, start));
+            const segment = escapeHtml(text.slice(start, end)) || '&#8203;';
+            const markClass = idx === highlightCurrent ? ' class="current"' : '';
+            html += `<mark${markClass}>${segment}</mark>`;
+            last = end;
+        });
+        html += escapeHtml(text.slice(last));
+        highlightContent.innerHTML = html || '&#8203;';
+        highlightLayer.classList.toggle('has-highlights', highlightMatches.length > 0);
+        syncScroll();
+    }
+
+    function triggerChange() {
+        renderHighlights();
+        if (highlightQuery) {
+            highlightMatches = computeHighlights(highlightQuery);
+            if (highlightMatches.length < 1) {
+                highlightCurrent = -1;
+            } else if (highlightCurrent >= highlightMatches.length) {
+                highlightCurrent = highlightMatches.length - 1;
+            }
+            renderHighlights();
+        }
+        changeHandlers.forEach(handler => {
+            try {
+                handler();
+            } catch (err) {
+                console.error(err);
+            }
+        });
+    }
+
+    function syncScroll() {
+        highlightContent.style.transform = `translate(${-textarea.scrollLeft}px, ${-textarea.scrollTop}px)`;
+    }
+
+    function setSelectionRange(start, end) {
+        const safeStart = clampOffset(start);
+        const safeEnd = clampOffset(end);
+        textarea.setSelectionRange(safeStart, safeEnd);
+    }
+
+    function lineRangeForSelection(start, end) {
+        const text = getValue();
+        const lineStart = text.lastIndexOf('\n', Math.max(0, start - 1)) + 1;
+        let lineEnd = text.indexOf('\n', end);
+        if (lineEnd === -1) lineEnd = text.length;
+        return { lineStart, lineEnd };
+    }
+
+    function lineStartOffsets(lineStart, lines) {
+        const offsets = [];
+        let current = lineStart;
+        for (let i = 0; i < lines.length; i += 1) {
+            offsets.push(current);
+            current += lines[i].length + 1;
+        }
+        return offsets;
+    }
+
+    function countAffectedLines(offset, lineStarts) {
+        let count = 0;
+        for (let i = 0; i < lineStarts.length; i += 1) {
+            if (offset >= lineStarts[i]) count += 1;
+        }
+        return count;
+    }
+
+    function replaceOffsets(start, end, text) {
+        const insertText = normalizeNewlines(text);
+        const value = getValue();
+        const before = value.slice(0, start);
+        const after = value.slice(end);
+        textarea.value = before + insertText + after;
+        const caret = start + insertText.length;
+        setSelectionRange(caret, caret);
+        triggerChange();
+    }
+
+    function handleIndent(isShift) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = getValue();
+        const { lineStart, lineEnd } = lineRangeForSelection(start, end);
+        const block = text.slice(lineStart, lineEnd);
+        const lines = block.split('\n');
+        const lineStarts = lineStartOffsets(lineStart, lines);
+
+        if (isShift) {
+            const removalPerLine = lines.map(line => {
+                if (line.startsWith('\t')) return 1;
+                let removal = 0;
+                for (let i = 0; i < INDENT.length && i < line.length; i += 1) {
+                    if (line[i] === ' ') removal += 1;
+                    else break;
+                }
+                return removal;
+            });
+            if (removalPerLine.every(count => count === 0)) return;
+            const adjustedLines = lines.map((line, idx) => line.slice(removalPerLine[idx]));
+            const newBlock = adjustedLines.join('\n');
+            const before = text.slice(0, lineStart);
+            const after = text.slice(lineEnd);
+            textarea.value = before + newBlock + after;
+
+            const removalBeforeStart = removalPerLine.slice(0, countAffectedLines(start, lineStarts)).reduce((a, b) => a + b, 0);
+            const removalBeforeEnd = removalPerLine.slice(0, countAffectedLines(end, lineStarts)).reduce((a, b) => a + b, 0);
+            setSelectionRange(start - removalBeforeStart, end - removalBeforeEnd);
+            triggerChange();
+            return;
+        }
+
+        const indentedLines = lines.map(line => INDENT + line);
+        const newBlock = indentedLines.join('\n');
+        const before = text.slice(0, lineStart);
+        const after = text.slice(lineEnd);
+        textarea.value = before + newBlock + after;
+
+        const shiftStart = countAffectedLines(start, lineStarts) * INDENT.length;
+        const shiftEnd = countAffectedLines(end, lineStarts) * INDENT.length;
+        setSelectionRange(start + shiftStart, end + shiftEnd);
+        triggerChange();
+    }
+
+    function handleTab(e) {
+        if (e.shiftKey) {
+            handleIndent(true);
+            return;
+        }
+
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        if (start !== end) {
+            handleIndent(false);
+            return;
+        }
+
+        replaceOffsets(start, end, INDENT);
+    }
+
+    function handleEnter() {
+        const cursor = textarea.selectionStart;
+        const text = getValue();
+        const lineStart = text.lastIndexOf('\n', Math.max(0, cursor - 1)) + 1;
+        let lineEnd = text.indexOf('\n', cursor);
+        if (lineEnd === -1) lineEnd = text.length;
+        const line = text.slice(lineStart, lineEnd);
+        const beforeCursor = text.slice(lineStart, cursor);
+
+        const listMatch = beforeCursor.match(/^(\s*)([*+-]|\d+\.)\s+(.*)$/);
+        if (listMatch) {
+            const [, indent, marker, rest] = listMatch;
+            const cursorAtEnd = cursor === lineStart + line.length;
+            if (rest.trim().length === 0 && cursorAtEnd) {
+                const before = text.slice(0, lineStart);
+                const after = text.slice(lineEnd);
+                textarea.value = before + after;
+                setSelectionRange(lineStart, lineStart);
+                triggerChange();
+                return true;
+            }
+
+            let nextMarker = marker;
+            if (/^\d+\.$/.test(marker)) {
+                const nextNumber = parseInt(marker, 10) + 1;
+                nextMarker = `${nextNumber}.`;
+            }
+            const insertion = `\n${indent}${nextMarker} `;
+            replaceOffsets(cursor, textarea.selectionEnd, insertion);
+            return true;
+        }
+
+        const blockquoteMatch = beforeCursor.match(/^(\s*>+\s*)(.*)$/);
+        if (blockquoteMatch) {
+            const [, prefix, content] = blockquoteMatch;
+            const cursorAtEnd = cursor === lineStart + line.length;
+            if (content.trim().length === 0 && cursorAtEnd) {
+                const before = text.slice(0, lineStart);
+                const after = text.slice(lineEnd);
+                textarea.value = before + after;
+                setSelectionRange(lineStart, lineStart);
+                triggerChange();
+                return true;
+            }
+            const insertion = `\n${prefix}`;
+            replaceOffsets(cursor, textarea.selectionEnd, insertion);
+            return true;
+        }
+
+        return false;
+    }
+
+    textarea.addEventListener('keydown', (e) => {
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            handleTab(e);
+        } else if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            const handled = handleEnter();
+            if (handled) {
+                e.preventDefault();
+            }
+        }
+    });
+
+    textarea.addEventListener('input', () => {
+        normalizeTextareaContent();
+        triggerChange();
+    });
+
+    textarea.addEventListener('scroll', syncScroll);
+
+
+    function createSearchCursor(regex) {
+        const flags = regex.flags.includes('g') ? regex.flags : `${regex.flags}g`;
+        const pattern = new RegExp(regex.source, flags);
+        let lastIndex = 0;
+        let currentMatch = null;
+
+        return {
+            findNext() {
+                const text = getValue();
+                pattern.lastIndex = lastIndex;
+                const match = pattern.exec(text);
+                if (!match) {
+                    currentMatch = null;
+                    return false;
+                }
+                const start = match.index;
+                const end = start + (match[0].length || 1);
+                lastIndex = end;
+                currentMatch = {
+                    from: offsetToPos(start),
+                    to: offsetToPos(end),
+                    startOffset: start,
+                    endOffset: end,
+                    text: match[0]
+                };
+                return true;
+            },
+            from() {
+                return currentMatch ? { ...currentMatch.from } : null;
+            },
+            to() {
+                return currentMatch ? { ...currentMatch.to } : null;
+            },
+            replace(replacement) {
+                if (!currentMatch) return;
+                const value = getValue();
+                const before = value.slice(0, currentMatch.startOffset);
+                const after = value.slice(currentMatch.endOffset);
+                textarea.value = before + replacement + after;
+                const delta = replacement.length - currentMatch.text.length;
+                lastIndex = currentMatch.endOffset + delta;
+                currentMatch = null;
+                triggerChange();
+            }
+        };
+    }
+
+    renderHighlights();
+
+    return {
+        isPlainTextarea: true,
+        getValue,
+        setValue(value) {
+            const normalized = normalizeNewlines(value || '');
+            if (getValue() === normalized) return;
+            const scrollTop = textarea.scrollTop;
+            const scrollLeft = textarea.scrollLeft;
+            textarea.value = normalized;
+            textarea.scrollTop = scrollTop;
+            textarea.scrollLeft = scrollLeft;
+            triggerChange();
+        },
+        focus() {
+            textarea.focus();
+        },
+        hasFocus() {
+            return document.activeElement === textarea;
+        },
+        getCursor() {
+            return offsetToPos(textarea.selectionStart);
+        },
+        setCursor(pos) {
+            const offset = posToOffset(pos);
+            setSelectionRange(offset, offset);
+        },
+        getSelection() {
+            return getValue().slice(textarea.selectionStart, textarea.selectionEnd);
+        },
+        replaceSelection(text) {
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            replaceOffsets(start, end, text);
+        },
+        replaceRange(text, from, to) {
+            const start = posToOffset(from);
+            const end = posToOffset(to);
+            replaceOffsets(start, end, text);
+        },
+        lineCount() {
+            return getValue().split('\n').length;
+        },
+        refresh() {
+            /* La altura se gestiona mediante CSS */
+        },
+        setOption(option, value) {
+            if (option === 'theme') {
+                textarea.dataset.theme = value;
+                const isDark = value && value.toLowerCase().includes('darker');
+                textarea.classList.toggle('markdown-textarea-dark', Boolean(isDark));
+                highlightLayer.classList.toggle('markdown-textarea-dark', Boolean(isDark));
+            } else if (option === 'lineWrapping') {
+                textarea.wrap = value ? 'soft' : 'off';
+            }
+        },
+        getScrollerElement() {
+            return textarea;
+        },
+        on(event, handler) {
+            if (event === 'change' && typeof handler === 'function') {
+                changeHandlers.add(handler);
+            }
+        },
+        off(event, handler) {
+            if (event === 'change' && typeof handler === 'function') {
+        changeHandlers.delete(handler);
+    }
+    },
+    addOverlay() {},
+    removeOverlay() {
+        highlightMatches = [];
+        highlightCurrent = -1;
+        highlightQuery = '';
+        renderHighlights();
+    },
+    setHighlights(_ranges, currentIndex, query) {
+        const usableQuery = typeof query === 'string' ? query.trim() : '';
+        if (!usableQuery) {
+            highlightMatches = [];
+            highlightCurrent = -1;
+            highlightQuery = '';
+            renderHighlights();
+            return;
+        }
+        highlightQuery = usableQuery;
+        highlightMatches = computeHighlights(usableQuery);
+        if (highlightMatches.length < 1) {
+            highlightCurrent = -1;
+            renderHighlights();
+            return;
+        }
+        const idx = typeof currentIndex === 'number' ? currentIndex : 0;
+        highlightCurrent = Math.min(Math.max(idx, 0), highlightMatches.length - 1);
+        renderHighlights();
+    },
+    clearHighlights() {
+        highlightMatches = [];
+        highlightCurrent = -1;
+        highlightQuery = '';
+        renderHighlights();
+    },
+        markText(from, to) {
+            const start = posToOffset(from);
+            const end = posToOffset(to);
+            const previousSelection = {
+                start: textarea.selectionStart,
+                end: textarea.selectionEnd
+            };
+            const previouslyFocused = document.activeElement;
+
+            setSelectionRange(start, end);
+
+            if (previouslyFocused && previouslyFocused !== textarea && typeof previouslyFocused.focus === 'function') {
+                try {
+                    previouslyFocused.focus({ preventScroll: true });
+                } catch (_) {
+                    previouslyFocused.focus();
+                }
+                if (typeof previouslyFocused.setSelectionRange === 'function' && typeof previouslyFocused.value === 'string') {
+                    const endPos = previouslyFocused.value.length;
+                    previouslyFocused.setSelectionRange(endPos, endPos);
+                }
+            }
+
+            return {
+                clear() {
+                    setSelectionRange(previousSelection.start, previousSelection.end);
+                    if (previouslyFocused && previouslyFocused !== textarea && typeof previouslyFocused.focus === 'function') {
+                        try {
+                            previouslyFocused.focus({ preventScroll: true });
+                        } catch (_) {
+                            previouslyFocused.focus();
+                        }
+                        if (typeof previouslyFocused.setSelectionRange === 'function' && typeof previouslyFocused.value === 'string') {
+                            const endPos = previouslyFocused.value.length;
+                            previouslyFocused.setSelectionRange(endPos, endPos);
+                        }
+                    }
+                }
+            };
+        },
+        scrollIntoView(pos) {
+            const offset = posToOffset(pos);
+            const previouslyFocused = document.activeElement;
+            const hadFocus = previouslyFocused === textarea;
+            setSelectionRange(offset, offset);
+            if (hadFocus) {
+                textarea.focus({ preventScroll: false });
+        } else if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
+            try {
+                previouslyFocused.focus({ preventScroll: true });
+            } catch (_) {
+                previouslyFocused.focus();
+            }
+                if (typeof previouslyFocused.setSelectionRange === 'function' && typeof previouslyFocused.value === 'string') {
+                    const endPos = previouslyFocused.value.length;
+                    previouslyFocused.setSelectionRange(endPos, endPos);
+                }
+            }
+        },
+        getSearchCursor(regex) {
+            return createSearchCursor(regex);
+        },
+        operation(fn) {
+            if (typeof fn === 'function') fn();
+        }
+    };
+}
 
 // --- Funciones de gestión de pestañas y documentos ---
 function saveDocsList() {
@@ -78,7 +679,8 @@ function startRename(tab) {
 
 function newDoc(name = 'Sin título', md = '') {
     const id = Date.now().toString(36) + Math.random().toString(36).substring(2);
-    const newDoc = { id, name, md, lastSaved: md };
+    const normalizedMd = normalizeNewlines(md || '');
+    const newDoc = { id, name, md: normalizedMd, lastSaved: normalizedMd };
     docs.push(newDoc);
     addTabElement(newDoc);
     switchTo(id);
@@ -127,6 +729,8 @@ function switchTo(id) {
     });
 
     markdownEditor.setValue(doc.md);
+    doc.md = markdownEditor.getValue();
+    doc.lastSaved = normalizeNewlines(doc.lastSaved || doc.md);
     updateHtml();
     markdownEditor.focus();
     updateDirtyIndicator(id, doc.md !== doc.lastSaved);
@@ -178,14 +782,17 @@ function openManualDoc(forceReload = false) {
     fetch('manual.md')
         .then(r => r.ok ? r.text() : '# Manual\n\nError: No se pudo cargar el manual.')
         .then(md => {
+            const normalized = normalizeNewlines(md);
             if (manualDoc && forceReload) {
                 const doc = docs.find(d => d.id === manualDoc.id);
-                doc.md = md;
-                doc.lastSaved = md;
+                if (doc) {
+                    doc.md = normalized;
+                    doc.lastSaved = normalized;
+                }
                 switchTo(doc.id);
                 updateDirtyIndicator(doc.id, false);
             } else {
-                newDoc('Manual', md);
+                newDoc('Manual', normalized);
             }
         })
         .catch(err => {
@@ -460,6 +1067,7 @@ window.onload = () => {
     // --- Obtención de elementos del DOM ---
     const mainContainer = document.getElementById('main-container');
     const toggleWidthBtn = document.getElementById('toggle-width-btn');
+    const desktopWindowBtn = document.getElementById('desktop-window-btn');
     const htmlOutput = document.getElementById('html-output');
     const viewToggleBtn = document.getElementById('view-toggle-btn');
     const htmlPanelTitle = document.getElementById('html-panel-title');
@@ -497,21 +1105,216 @@ window.onload = () => {
     const imageModalOverlay = document.getElementById('image-modal-overlay');
     const insertImageBtn = document.getElementById('insert-image-btn');
     const cancelImageBtn = document.getElementById('cancel-image-btn');
+    const openEdicuatexBtn = document.getElementById('open-edicuatex-btn');
+
+    const params = new URLSearchParams(window.location.search);
+    const desktopMode = params.get(DESKTOP_PARAM_KEY) === '1';
+    const desktopSpawned = params.get(DESKTOP_SPAWNED_KEY) === '1';
+    if (desktopMode) {
+        document.body.classList.add('desktop-mode');
+        if (desktopWindowBtn) desktopWindowBtn.classList.add('hidden');
+        if (!desktopSpawned && (!window.opener || window.opener.closed)) {
+            const spawned = openDesktopWindow(true);
+            if (spawned) {
+                try { window.close(); } catch (_) {}
+                return;
+            }
+            if (desktopWindowBtn) desktopWindowBtn.classList.remove('hidden');
+        }
+    }
+
+    function resolveHostOrigin() {
+        const origin = window.location.origin;
+        if (!origin || origin === 'null' || origin.startsWith('file:')) {
+            return '*';
+        }
+        return origin;
+    }
+
+    function buildEdicuatexUrl(initialLatex = '') {
+        const url = new URL(EDICUATEX_BASE_URL);
+        url.searchParams.set('pm', '1');
+        url.searchParams.set('origin', resolveHostOrigin());
+        if (initialLatex) {
+            url.searchParams.set('sel', initialLatex);
+        }
+        return url.toString();
+    }
+
+    function openEdicuatex() {
+        const selection = markdownEditor && typeof markdownEditor.getSelection === 'function'
+            ? markdownEditor.getSelection().trim()
+            : '';
+        if (edicuatexWindow && !edicuatexWindow.closed) {
+            try { edicuatexWindow.close(); } catch (_) {}
+            edicuatexWindow = null;
+        }
+        const url = buildEdicuatexUrl(selection);
+        try {
+            edicuatexOrigin = new URL(url).origin;
+        } catch (err) {
+            edicuatexOrigin = null;
+        }
+        const features = 'width=1100,height=820,resizable=yes,scrollbars=yes';
+        const child = window.open(url, 'edicuatex', features);
+        if (!child) {
+            alert(getTranslation('edicuatex_popup_blocked', 'Activa las ventanas emergentes en tu navegador para usar EdiCuaTeX.'));
+            return;
+        }
+        edicuatexWindow = child;
+        child.focus();
+    }
+
+    if (openEdicuatexBtn) {
+        openEdicuatexBtn.addEventListener('click', openEdicuatex);
+    }
+
+    function openDesktopWindow(autoLaunch = false) {
+        const urlObj = new URL(window.location.href);
+        urlObj.searchParams.set(DESKTOP_PARAM_KEY, '1');
+        urlObj.searchParams.set(DESKTOP_SPAWNED_KEY, '1');
+
+        const storedSize = (() => {
+            try {
+                const raw = localStorage.getItem(DESKTOP_SIZE_KEY);
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                if (!parsed || typeof parsed.width !== 'number' || typeof parsed.height !== 'number') return null;
+                return parsed;
+            } catch (err) {
+                console.warn('Error reading desktop size from storage', err);
+                return null;
+            }
+        })();
+
+        const availWidth = (window.screen && window.screen.availWidth) ? window.screen.availWidth : (window.outerWidth || 1600);
+        const availHeight = (window.screen && window.screen.availHeight) ? window.screen.availHeight : (window.outerHeight || 900);
+        const width = storedSize ? storedSize.width : Math.max(Math.round(availWidth * 0.85), 1100);
+        const height = storedSize ? storedSize.height : Math.max(Math.round(availHeight * 0.85), 780);
+        const leftBase = (() => {
+            if (window.screen && typeof window.screen.availLeft === 'number') return window.screen.availLeft;
+            if (typeof window.screenX === 'number') return window.screenX;
+            if (typeof window.screenLeft === 'number') return window.screenLeft;
+            return 0;
+        })();
+        const topBase = (() => {
+            if (window.screen && typeof window.screen.availTop === 'number') return window.screen.availTop;
+            if (typeof window.screenY === 'number') return window.screenY;
+            if (typeof window.screenTop === 'number') return window.screenTop;
+            return 0;
+        })();
+        const left = Math.max(0, Math.round(leftBase + (availWidth - width) / 2));
+        const top = Math.max(0, Math.round(topBase + (availHeight - height) / 2));
+
+        const features = [
+            `width=${width}`,
+            `height=${height}`,
+            `left=${left}`,
+            `top=${top}`,
+            'resizable=yes',
+            'scrollbars=yes',
+            'toolbar=no',
+            'menubar=no',
+            'location=no',
+            'status=no'
+        ].join(',');
+        const url = urlObj.toString();
+        if (desktopWindow && !desktopWindow.closed) {
+            try { desktopWindow.focus(); return true; } catch (_) {}
+        }
+        desktopWindow = window.open(url, 'edimarkweb-desktop', features);
+        if (!desktopWindow) {
+            if (!autoLaunch) {
+                alert(getTranslation('desktop_window_popup_blocked', 'Activa las ventanas emergentes en tu navegador para abrir la ventana independiente.'));
+            }
+            return false;
+        }
+        desktopWindow.focus();
+        if (desktopWindowMonitor) {
+            clearInterval(desktopWindowMonitor);
+        }
+        desktopWindowMonitor = setInterval(() => {
+            if (!desktopWindow || desktopWindow.closed) {
+                clearInterval(desktopWindowMonitor);
+                desktopWindowMonitor = null;
+                desktopWindow = null;
+            }
+            const storageFlag = localStorage.getItem(DESKTOP_SIZE_KEY);
+            if (!storageFlag && desktopWindow && !desktopWindow.closed) {
+                try {
+                    const w = desktopWindow.outerWidth || desktopWindow.innerWidth;
+                    const h = desktopWindow.outerHeight || desktopWindow.innerHeight;
+                    if (w && h) {
+                        localStorage.setItem(DESKTOP_SIZE_KEY, JSON.stringify({ width: w, height: h }));
+                    }
+                } catch (err) {
+                    console.warn('Error storing desktop size', err);
+                }
+            }
+        }, 1000);
+
+        try {
+            const handleResize = () => {
+                if (!desktopWindow || desktopWindow.closed) return;
+                try {
+                    const w = desktopWindow.outerWidth || desktopWindow.innerWidth;
+                    const h = desktopWindow.outerHeight || desktopWindow.innerHeight;
+                    if (w && h) {
+                        localStorage.setItem(DESKTOP_SIZE_KEY, JSON.stringify({ width: w, height: h }));
+                    }
+                } catch (err) {
+                    console.warn('Error storing desktop size', err);
+                }
+            };
+            desktopWindow.addEventListener('resize', handleResize);
+            desktopWindow.addEventListener('beforeunload', handleResize);
+        } catch (err) {
+            console.warn('Cannot attach resize listener to desktop window', err);
+        }
+
+        return true;
+    }
+
+    if (desktopWindowBtn) {
+        desktopWindowBtn.addEventListener('click', openDesktopWindow);
+    }
+
+    window.addEventListener('beforeunload', () => {
+        if (desktopWindow && !desktopWindow.closed) {
+            try { desktopWindow.close(); } catch (_) {}
+        }
+        desktopWindow = null;
+        if (desktopWindowMonitor) {
+            clearInterval(desktopWindowMonitor);
+            desktopWindowMonitor = null;
+        }
+    });
+
+    window.addEventListener('message', (event) => {
+        if (!event || !event.data || event.data.type !== 'edicuatex:result') return;
+        if (edicuatexOrigin && event.origin !== edicuatexOrigin) return;
+        if (edicuatexWindow && event.source && event.source !== edicuatexWindow) return;
+        const insertion = event.data.wrapped || event.data.latex || '';
+        if (!insertion) return;
+        requestAnimationFrame(() => {
+            markdownEditor.replaceSelection(insertion);
+            markdownEditor.focus();
+            if (edicuatexWindow && !edicuatexWindow.closed) {
+                try { edicuatexWindow.close(); } catch (_) {}
+            }
+            edicuatexWindow = null;
+            edicuatexOrigin = null;
+        });
+    });
 
     // --- Inicialización de librerías ---
     if (window.TurndownService) {
         turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
     }
 
-    markdownEditor = CodeMirror.fromTextArea(document.getElementById('markdown-input'), {
-        mode: 'gfm', theme: 'eclipse', lineNumbers: true,
-        lineWrapping: true, autofocus: true,
-        extraKeys: {
-            'Enter': 'newlineAndIndentContinueMarkdownList',
-            'Tab': 'indentMore',
-            'Shift-Tab': 'indentLess'
-        }
-    });
+    const markdownTextarea = document.getElementById('markdown-input');
+    markdownEditor = createTextareaEditor(markdownTextarea);
+    markdownTextarea.focus();
 
     htmlEditor = CodeMirror.fromTextArea(document.getElementById('html-source-view'), {
         mode: 'htmlmixed', theme: 'eclipse', lineNumbers: true, lineWrapping: true
@@ -577,7 +1380,8 @@ window.onload = () => {
     if (savedDocsList.length > 0) {
         savedDocsList.forEach(docInfo => {
             const md = localStorage.getItem(`${AUTOSAVE_KEY_PREFIX}-${docInfo.id}`) || '';
-            docs.push({ ...docInfo, md, lastSaved: md });
+            const normalized = normalizeNewlines(md);
+            docs.push({ ...docInfo, md: normalized, lastSaved: normalized });
             addTabElement(docInfo);
         });
         switchTo(docs[0].id);

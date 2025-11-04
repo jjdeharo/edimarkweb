@@ -87,7 +87,12 @@ function initSearch(mdEditor, htmlEditor, getLayout) {
 
     function runSearch() {
         const editor = determineActiveEditor();
-        if (!editor) return;
+        if (!editor) {
+            if (state.activeEditor && typeof state.activeEditor.clearHighlights === 'function') {
+                state.activeEditor.clearHighlights();
+            }
+            return;
+        }
 
         clearSearchState();
         state.activeEditor = editor;
@@ -95,6 +100,7 @@ function initSearch(mdEditor, htmlEditor, getLayout) {
         const query = searchInput.value;
         if (!query) {
             updateMatchesInfo();
+            if (typeof editor.clearHighlights === 'function') editor.clearHighlights();
             return;
         }
 
@@ -112,6 +118,8 @@ function initSearch(mdEditor, htmlEditor, getLayout) {
         if (state.matches.length > 0) {
             state.currentIndex = 0;
             highlightCurrentMatch();
+        } else if (typeof editor.clearHighlights === 'function') {
+            editor.clearHighlights();
         }
         updateMatchesInfo();
     }
@@ -168,9 +176,13 @@ function initSearch(mdEditor, htmlEditor, getLayout) {
     }
     
     function clearSearchState() {
-        if (state.activeEditor) {
-            if (state.overlay) state.activeEditor.removeOverlay(state.overlay);
-            if (state.currentMatchMarker) state.currentMatchMarker.clear();
+        const { activeEditor, overlay, currentMatchMarker } = state;
+        if (activeEditor) {
+            if (overlay) activeEditor.removeOverlay(overlay);
+            if (currentMatchMarker) currentMatchMarker.clear();
+            if (typeof activeEditor.clearHighlights === 'function') {
+                activeEditor.clearHighlights();
+            }
         }
         state = { matches: [], currentIndex: -1, activeEditor: null, queryRegex: null, overlay: null, currentMatchMarker: null };
     }
@@ -181,6 +193,9 @@ function initSearch(mdEditor, htmlEditor, getLayout) {
 
         const match = state.matches[state.currentIndex];
         const editor = state.activeEditor;
+        if (typeof editor.setHighlights === 'function') {
+            editor.setHighlights(state.matches, state.currentIndex, searchInput.value);
+        }
         state.currentMatchMarker = editor.markText(match.from, match.to, { className: 'cm-search-current' });
         editor.scrollIntoView(match.from, 100);
         updateMatchesInfo();
