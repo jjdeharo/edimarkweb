@@ -280,10 +280,40 @@ async function generateHtml({
   }
 }
 
+async function generateLatex({
+  markdown = '',
+  standalone = false,
+  onStatus = () => {},
+} = {}) {
+  const normalized = normalizeNewlines(trimInlineMath(markdown || ''));
+  if (!normalized.trim()) {
+    const message = translate('no_content', 'No hay contenido para exportar.');
+    throw new Error(message || 'No content');
+  }
+
+  triggerStatus(onStatus, 'latex_export_preparing', 'Preparando LaTeX, espera...');
+
+  try {
+    const base64 = await loadPandocWasm({ onStatus });
+    let pandocArgs = '-f markdown -t latex --no-highlight';
+    if (standalone) {
+      pandocArgs = `-s ${pandocArgs}`;
+    }
+    const resultadoBytes = await pandoc(pandocArgs, normalized, base64);
+    let latexResult = new TextDecoder().decode(resultadoBytes);
+    latexResult = latexResult.replace(/^[ \t]*\\tightlist\s*$(\r?\n)?/gm, '');
+    return latexResult;
+  } catch (error) {
+    triggerStatus(onStatus, 'latex_export_error', 'Error durante la exportación a LaTeX.');
+    throw error;
+  }
+}
+
 window.PandocExporter = {
   exportDocument,
   generateHtml,
+  generateLatex,
   trimInlineMath,
 };
 
-export { exportDocument, generateHtml, trimInlineMath };
+export { exportDocument, generateHtml, generateLatex, trimInlineMath };

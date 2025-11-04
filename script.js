@@ -1360,17 +1360,79 @@ window.onload = () => {
                         updateExportStatus(getTranslation('html_export_error', getTranslation('export_error', 'Error durante la exportación.')));
                     }
                 }
+            } else if (
+                lowerFormat === 'latex-download' ||
+                lowerFormat === 'latex-full-download' ||
+                lowerFormat === 'latex-copy' ||
+                lowerFormat === 'latex-full-copy'
+            ) {
+                if (typeof exporter.generateLatex !== 'function') {
+                    console.warn('Función generateLatex no disponible');
+                    updateExportStatus(getTranslation('export_error', 'Error durante la exportación.'));
+                    return;
+                }
+
+                const standalone = lowerFormat === 'latex-full-download' || lowerFormat === 'latex-full-copy';
+                let latexResult;
+                try {
+                    latexResult = await exporter.generateLatex({
+                        markdown: rawMarkdown,
+                        standalone,
+                        onStatus: updateExportStatus,
+                    });
+                } catch (err) {
+                    console.error('No se pudo generar LaTeX:', err);
+                    updateExportStatus(getTranslation('latex_export_error', getTranslation('export_error', 'Error durante la exportación.')));
+                    return;
+                }
+
+                if (lowerFormat.endsWith('download')) {
+                    const latexFilename = `${safeName}.tex`;
+                    saveFile(latexFilename, latexResult, 'application/x-tex;charset=utf-8');
+                    updateExportStatus(getTranslation('latex_export_done', 'Exportación a LaTeX completada.'));
+                } else {
+                    try {
+                        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                            await navigator.clipboard.writeText(latexResult);
+                        } else {
+                            const tempTextarea = document.createElement('textarea');
+                            tempTextarea.value = latexResult;
+                            tempTextarea.style.position = 'fixed';
+                            tempTextarea.style.opacity = '0';
+                            document.body.appendChild(tempTextarea);
+                            try {
+                                tempTextarea.focus();
+                                tempTextarea.select();
+                                const success = document.execCommand('copy');
+                                if (!success) {
+                                    throw new Error('document.execCommand returned false');
+                                }
+                            } finally {
+                                document.body.removeChild(tempTextarea);
+                            }
+                        }
+                        updateExportStatus(getTranslation('latex_copy_done', 'LaTeX copiado al portapapeles.'));
+                    } catch (err) {
+                        console.error('No se pudo copiar LaTeX al portapapeles:', err);
+                        updateExportStatus(getTranslation('latex_export_error', getTranslation('export_error', 'Error durante la exportación.')));
+                    }
+                }
             } else {
                 console.warn('Formato de exportación no soportado:', format);
                 updateExportStatus(getTranslation('export_error', 'Error durante la exportación.'));
             }
         } catch (err) {
             console.error(`No se pudo exportar a ${format}:`, err);
-            const errorKey = format === 'odt'
+            const lowerFormat = String(format || '').toLowerCase();
+            const errorKey = lowerFormat === 'odt'
                 ? 'odt_export_error'
-                : format === 'docx'
+                : lowerFormat === 'docx'
                     ? 'docx_export_error'
-                    : 'export_error';
+                    : lowerFormat.startsWith('html')
+                        ? 'html_export_error'
+                        : lowerFormat.startsWith('latex')
+                            ? 'latex_export_error'
+                            : 'export_error';
             updateExportStatus(getTranslation(errorKey, getTranslation('export_error', 'Error durante la exportación.')));
         } finally {
             if (exportMenuBtn) {
