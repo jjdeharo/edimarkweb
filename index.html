@@ -79,12 +79,19 @@
             <button id="save-btn" class="action-btn focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400" data-i18n-key="save_btn_title" title="Guardar archivo (Ctrl+S)"><i data-lucide="save" class="text-green-600"></i><span class="hidden sm:inline" data-i18n-key="save_btn_text">Guardar</span></button>
             <div id="export-menu-container" class="relative">
               <button type="button" id="export-menu-btn" class="action-btn flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400" data-i18n-key="export_menu_btn_title" title="Exportar" aria-haspopup="true" aria-expanded="false"><i data-lucide="download" class="text-indigo-600"></i><span class="hidden sm:inline" data-i18n-key="export_menu_btn_text">Exportar</span><i data-lucide="chevron-down" class="w-4 h-4 opacity-80"></i></button>
-              <div id="export-menu" class="hidden absolute right-0 mt-2 w-48 rounded-md border border-slate-200 bg-white shadow-lg ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-800 z-20" role="menu" aria-labelledby="export-menu-btn">
+              <div id="export-menu" class="hidden absolute right-0 mt-2 w-56 rounded-md border border-slate-200 bg-white shadow-lg ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-800 z-20" role="menu" aria-labelledby="export-menu-btn">
                 <button type="button" class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 focus-visible:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700" data-export-format="docx" data-i18n-key="export_menu_option_docx" role="menuitem">
                   DOCX (Microsoft Word)
                 </button>
                 <button type="button" class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 focus-visible:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700" data-export-format="odt" data-i18n-key="export_menu_option_odt" role="menuitem">
                   ODT (LibreOffice)
+                </button>
+                <div class="my-1 border-t border-slate-200 dark:border-slate-700"></div>
+                <button type="button" class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 focus-visible:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700" data-export-format="html-download" data-i18n-key="export_menu_option_html_download" role="menuitem">
+                  HTML (descargar)
+                </button>
+                <button type="button" class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 focus-visible:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700" data-export-format="html-copy" data-i18n-key="export_menu_option_html_copy" role="menuitem">
+                  HTML (copiar sin archivo)
                 </button>
               </div>
             </div>

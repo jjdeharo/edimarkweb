@@ -1278,9 +1278,6 @@ window.onload = () => {
         const currentDoc = docs.find(d => d.id === currentId);
         const baseName = currentDoc?.name ? String(currentDoc.name).replace(/\.[^.]+$/, '') : 'documento';
         const safeName = baseName || 'documento';
-        const extension = format === 'odt' ? 'odt' : 'docx';
-        const outputFilename = `${safeName}.${extension}`;
-
         const disableClasses = ['opacity-70', 'pointer-events-none'];
         if (exportMenuBtn) {
             exportMenuBtn.disabled = true;
@@ -1289,18 +1286,91 @@ window.onload = () => {
         closeExportMenu();
 
         try {
-            await exporter.exportDocument({
-                format,
-                markdown: rawMarkdown,
-                outputFilename,
-                onStatus: updateExportStatus,
-                onNotification: (message) => {
-                    if (message) alert(message);
-                },
-            });
+            const lowerFormat = String(format || '').toLowerCase();
+            if (lowerFormat === 'docx' || lowerFormat === 'odt') {
+                const extension = lowerFormat;
+                const outputFilename = `${safeName}.${extension}`;
+                await exporter.exportDocument({
+                    format: lowerFormat,
+                    markdown: rawMarkdown,
+                    outputFilename,
+                    onStatus: updateExportStatus,
+                    onNotification: (message) => {
+                        if (message) alert(message);
+                    },
+                });
+            } else if (lowerFormat === 'html-download' || lowerFormat === 'html-copy') {
+                if (typeof exporter.generateHtml !== 'function') {
+                    console.warn('Función generateHtml no disponible');
+                    updateExportStatus(getTranslation('export_error', 'Error durante la exportación.'));
+                    return;
+                }
+
+                const standalone = lowerFormat === 'html-download';
+                let htmlResult;
+                try {
+                    htmlResult = await exporter.generateHtml({
+                        markdown: rawMarkdown,
+                        standalone,
+                        onStatus: updateExportStatus,
+                    });
+                } catch (err) {
+                    console.error('No se pudo generar HTML:', err);
+                    updateExportStatus(getTranslation('html_export_error', getTranslation('export_error', 'Error durante la exportación.')));
+                    return;
+                }
+
+                if (standalone) {
+                    const htmlFilename = `${safeName}.html`;
+                    saveFile(htmlFilename, htmlResult, 'text/html;charset=utf-8');
+                    updateExportStatus(getTranslation('html_export_done', 'Exportación HTML completada.'));
+                } else {
+                    try {
+                        if (navigator.clipboard && window.ClipboardItem) {
+                            const htmlBlob = new Blob([htmlResult], { type: 'text/html' });
+                            const plainBlob = new Blob([htmlResult], { type: 'text/plain' });
+                            await navigator.clipboard.write([
+                                new ClipboardItem({
+                                    'text/html': htmlBlob,
+                                    'text/plain': plainBlob,
+                                }),
+                            ]);
+                        } else if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                            await navigator.clipboard.writeText(htmlResult);
+                        } else {
+                            const tempTextarea = document.createElement('textarea');
+                            tempTextarea.value = htmlResult;
+                            tempTextarea.style.position = 'fixed';
+                            tempTextarea.style.opacity = '0';
+                            document.body.appendChild(tempTextarea);
+                            try {
+                                tempTextarea.focus();
+                                tempTextarea.select();
+                                const success = document.execCommand('copy');
+                                if (!success) {
+                                    throw new Error('document.execCommand returned false');
+                                }
+                            } finally {
+                                document.body.removeChild(tempTextarea);
+                            }
+                        }
+                        updateExportStatus(getTranslation('html_copy_done', 'HTML copiado al portapapeles.'));
+                    } catch (err) {
+                        console.error('No se pudo copiar HTML al portapapeles:', err);
+                        updateExportStatus(getTranslation('html_export_error', getTranslation('export_error', 'Error durante la exportación.')));
+                    }
+                }
+            } else {
+                console.warn('Formato de exportación no soportado:', format);
+                updateExportStatus(getTranslation('export_error', 'Error durante la exportación.'));
+            }
         } catch (err) {
             console.error(`No se pudo exportar a ${format}:`, err);
-            const errorKey = format === 'odt' ? 'odt_export_error' : 'docx_export_error';
+            const errorKey = format === 'odt'
+                ? 'odt_export_error'
+                : format === 'docx'
+                    ? 'docx_export_error'
+                    : 'export_error';
             updateExportStatus(getTranslation(errorKey, getTranslation('export_error', 'Error durante la exportación.')));
         } finally {
             if (exportMenuBtn) {

@@ -52,6 +52,14 @@ function normalizeNewlines(str) {
   return typeof str === 'string' ? str.replace(/\r\n?/g, '\n') : '';
 }
 
+function escapeHtmlEntities(str) {
+  if (typeof str !== 'string') return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 // Matches the inline math trim used in MDAITex.
 function trimInlineMath(content) {
   if (typeof content !== 'string') return '';
@@ -234,9 +242,48 @@ async function exportDocument({
   }
 }
 
+async function generateHtml({
+  markdown = '',
+  standalone = true,
+  onStatus = () => {},
+  onNotification = () => {},
+} = {}) {
+  const normalized = normalizeNewlines(trimInlineMath(markdown || ''));
+  if (!normalized.trim()) {
+    const message = translate('no_content', 'No hay contenido para exportar.');
+    throw new Error(message || 'No content');
+  }
+
+  triggerStatus(onStatus, 'html_export_preparing', 'Preparando HTML, espera...');
+
+  try {
+    const base64 = await loadPandocWasm({ onStatus });
+    let pandocArgs = '-f markdown -t html --mathjax';
+    if (standalone) {
+      pandocArgs += ' -s';
+    }
+    const resultadoBytes = await pandoc(pandocArgs, normalized, base64);
+    let htmlResult = new TextDecoder().decode(resultadoBytes);
+
+    if (standalone) {
+      const titleMatch = normalized.match(/^#\s+(.*)/m);
+      const title = titleMatch ? titleMatch[1].trim() : translate('untitled_document', 'Documento sin título');
+      if (title) {
+        htmlResult = htmlResult.replace(/<title>.*?<\/title>/i, `<title>${escapeHtmlEntities(title)}</title>`);
+      }
+    }
+
+    return htmlResult;
+  } catch (error) {
+    triggerStatus(onStatus, 'html_export_error', 'Error durante la exportación HTML.');
+    throw error;
+  }
+}
+
 window.PandocExporter = {
   exportDocument,
+  generateHtml,
   trimInlineMath,
 };
 
-export { exportDocument, trimInlineMath };
+export { exportDocument, generateHtml, trimInlineMath };
