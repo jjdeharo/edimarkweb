@@ -1075,6 +1075,7 @@ window.onload = () => {
     const openFileBtn = document.getElementById('open-file-btn');
     const fileInput = document.getElementById('file-input');
     const saveBtn = document.getElementById('save-btn');
+    const exportDocxBtn = document.getElementById('export-docx-btn');
     const printBtn = document.getElementById('print-btn');
     const helpBtn = document.getElementById('help-btn');
     const clearAllBtn = document.getElementById('clear-all-btn');
@@ -1106,6 +1107,7 @@ window.onload = () => {
     const insertImageBtn = document.getElementById('insert-image-btn');
     const cancelImageBtn = document.getElementById('cancel-image-btn');
     const openEdicuatexBtn = document.getElementById('open-edicuatex-btn');
+    const docxStatusEl = document.getElementById('docx-status');
 
     const params = new URLSearchParams(window.location.search);
     const desktopMode = params.get(DESKTOP_PARAM_KEY) === '1';
@@ -1167,6 +1169,18 @@ window.onload = () => {
 
     if (openEdicuatexBtn) {
         openEdicuatexBtn.addEventListener('click', openEdicuatex);
+    }
+
+    function updateDocxStatus(message) {
+        if (!docxStatusEl) return;
+        const text = typeof message === 'string' ? message.trim() : '';
+        if (text) {
+            docxStatusEl.textContent = text;
+            docxStatusEl.classList.remove('hidden');
+        } else {
+            docxStatusEl.textContent = '';
+            docxStatusEl.classList.add('hidden');
+        }
     }
 
     function openDesktopWindow(autoLaunch = false) {
@@ -1525,6 +1539,53 @@ window.onload = () => {
     });
     cancelSaveBtn.addEventListener('click', () => toggleSaveModal(false));
     saveModalOverlay.addEventListener('click', (e) => { if (e.target === saveModalOverlay) toggleSaveModal(false); });
+
+    if (exportDocxBtn) {
+        exportDocxBtn.addEventListener('click', async () => {
+            if (!window.DocxExporter || typeof window.DocxExporter.exportMarkdownToDocx !== 'function') {
+                console.warn('DocxExporter no disponible');
+                updateDocxStatus(getTranslation('docx_export_error', 'Error durante la exportación a DOCX.'));
+                return;
+            }
+
+            const exporter = window.DocxExporter;
+            const rawMarkdown = (markdownEditor && typeof markdownEditor.getValue === 'function')
+                ? markdownEditor.getValue()
+                : '';
+            const prepared = (exporter.trimInlineMath ? exporter.trimInlineMath(rawMarkdown) : rawMarkdown).trim();
+            if (!prepared) {
+                alert(getTranslation('no_content', 'No hay contenido para exportar.'));
+                updateDocxStatus('');
+                return;
+            }
+
+            const currentDoc = docs.find(d => d.id === currentId);
+            const baseName = currentDoc?.name ? String(currentDoc.name).replace(/\.[^.]+$/, '') : 'documento';
+            const outputFilename = `${baseName || 'documento'}.docx`;
+
+            const disableClasses = ['opacity-70', 'pointer-events-none'];
+            exportDocxBtn.disabled = true;
+            exportDocxBtn.classList.add(...disableClasses);
+            try {
+                await exporter.exportMarkdownToDocx({
+                    markdown: rawMarkdown,
+                    outputFilename,
+                    onStatus: updateDocxStatus,
+                    onNotification: (message) => {
+                        if (message) {
+                            alert(message);
+                        }
+                    },
+                });
+            } catch (err) {
+                console.error('No se pudo exportar a DOCX:', err);
+                updateDocxStatus(getTranslation('docx_export_error', 'Error durante la exportación a DOCX.'));
+            } finally {
+                exportDocxBtn.disabled = false;
+                exportDocxBtn.classList.remove(...disableClasses);
+            }
+        });
+    }
 
     clearAllBtn.addEventListener('click', () => toggleClearModal(true));
     confirmClearBtn.addEventListener('click', () => {
