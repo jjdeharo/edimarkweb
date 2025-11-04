@@ -1075,7 +1075,10 @@ window.onload = () => {
     const openFileBtn = document.getElementById('open-file-btn');
     const fileInput = document.getElementById('file-input');
     const saveBtn = document.getElementById('save-btn');
-    const exportDocxBtn = document.getElementById('export-docx-btn');
+    const exportMenuContainer = document.getElementById('export-menu-container');
+    const exportMenuBtn = document.getElementById('export-menu-btn');
+    const exportMenu = document.getElementById('export-menu');
+    const exportOptionButtons = exportMenu ? Array.from(exportMenu.querySelectorAll('[data-export-format]')) : [];
     const printBtn = document.getElementById('print-btn');
     const helpBtn = document.getElementById('help-btn');
     const clearAllBtn = document.getElementById('clear-all-btn');
@@ -1107,7 +1110,7 @@ window.onload = () => {
     const insertImageBtn = document.getElementById('insert-image-btn');
     const cancelImageBtn = document.getElementById('cancel-image-btn');
     const openEdicuatexBtn = document.getElementById('open-edicuatex-btn');
-    const docxStatusEl = document.getElementById('docx-status');
+    const exportStatusEl = document.getElementById('export-status');
 
     const params = new URLSearchParams(window.location.search);
     const desktopMode = params.get(DESKTOP_PARAM_KEY) === '1';
@@ -1171,15 +1174,139 @@ window.onload = () => {
         openEdicuatexBtn.addEventListener('click', openEdicuatex);
     }
 
-    function updateDocxStatus(message) {
-        if (!docxStatusEl) return;
+    if (exportMenuBtn) {
+        exportMenuBtn.setAttribute('aria-expanded', 'false');
+        exportMenuBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleExportMenu();
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                window.lucide.createIcons();
+            }
+        });
+        exportMenuBtn.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                if (!isExportMenuOpen()) openExportMenu();
+                exportOptionButtons[0]?.focus();
+            }
+        });
+    }
+
+    if (exportOptionButtons.length) {
+        exportOptionButtons.forEach((btn) => {
+            btn.addEventListener('click', (event) => {
+                event.preventDefault();
+                const format = btn.getAttribute('data-export-format');
+                closeExportMenu();
+                if (format) performExport(format);
+            });
+        });
+    }
+
+    if (exportMenuContainer) {
+        document.addEventListener('click', (event) => {
+            if (!isExportMenuOpen()) return;
+            if (!exportMenuContainer.contains(event.target)) {
+                closeExportMenu();
+            }
+        }, { capture: true });
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && isExportMenuOpen()) {
+            closeExportMenu();
+            if (exportMenuBtn) exportMenuBtn.focus();
+        }
+    });
+
+    function updateExportStatus(message) {
+        if (!exportStatusEl) return;
         const text = typeof message === 'string' ? message.trim() : '';
         if (text) {
-            docxStatusEl.textContent = text;
-            docxStatusEl.classList.remove('hidden');
+            exportStatusEl.textContent = text;
+            exportStatusEl.classList.remove('hidden');
         } else {
-            docxStatusEl.textContent = '';
-            docxStatusEl.classList.add('hidden');
+            exportStatusEl.textContent = '';
+            exportStatusEl.classList.add('hidden');
+        }
+    }
+
+    function isExportMenuOpen() {
+        return exportMenu && !exportMenu.classList.contains('hidden');
+    }
+
+    function openExportMenu() {
+        if (!exportMenu) return;
+        exportMenu.classList.remove('hidden');
+        if (exportMenuBtn) exportMenuBtn.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeExportMenu() {
+        if (!exportMenu) return;
+        exportMenu.classList.add('hidden');
+        if (exportMenuBtn) exportMenuBtn.setAttribute('aria-expanded', 'false');
+    }
+
+    function toggleExportMenu() {
+        if (!exportMenu) return;
+        if (isExportMenuOpen()) {
+            closeExportMenu();
+        } else {
+            openExportMenu();
+        }
+    }
+
+    async function performExport(format) {
+        if (!window.PandocExporter || typeof window.PandocExporter.exportDocument !== 'function') {
+            console.warn('PandocExporter no disponible');
+            updateExportStatus(getTranslation('export_error', 'Error durante la exportación.'));
+            return;
+        }
+
+        const exporter = window.PandocExporter;
+        const rawMarkdown = (markdownEditor && typeof markdownEditor.getValue === 'function')
+            ? markdownEditor.getValue()
+            : '';
+        const prepared = exporter.trimInlineMath ? exporter.trimInlineMath(rawMarkdown) : rawMarkdown;
+        if (!prepared.trim()) {
+            alert(getTranslation('no_content', 'No hay contenido para exportar.'));
+            updateExportStatus('');
+            return;
+        }
+
+        const currentDoc = docs.find(d => d.id === currentId);
+        const baseName = currentDoc?.name ? String(currentDoc.name).replace(/\.[^.]+$/, '') : 'documento';
+        const safeName = baseName || 'documento';
+        const extension = format === 'odt' ? 'odt' : 'docx';
+        const outputFilename = `${safeName}.${extension}`;
+
+        const disableClasses = ['opacity-70', 'pointer-events-none'];
+        if (exportMenuBtn) {
+            exportMenuBtn.disabled = true;
+            exportMenuBtn.classList.add(...disableClasses);
+        }
+        closeExportMenu();
+
+        try {
+            await exporter.exportDocument({
+                format,
+                markdown: rawMarkdown,
+                outputFilename,
+                onStatus: updateExportStatus,
+                onNotification: (message) => {
+                    if (message) alert(message);
+                },
+            });
+        } catch (err) {
+            console.error(`No se pudo exportar a ${format}:`, err);
+            const errorKey = format === 'odt' ? 'odt_export_error' : 'docx_export_error';
+            updateExportStatus(getTranslation(errorKey, getTranslation('export_error', 'Error durante la exportación.')));
+        } finally {
+            if (exportMenuBtn) {
+                exportMenuBtn.disabled = false;
+                exportMenuBtn.classList.remove(...disableClasses);
+            }
         }
     }
 
@@ -1539,53 +1666,6 @@ window.onload = () => {
     });
     cancelSaveBtn.addEventListener('click', () => toggleSaveModal(false));
     saveModalOverlay.addEventListener('click', (e) => { if (e.target === saveModalOverlay) toggleSaveModal(false); });
-
-    if (exportDocxBtn) {
-        exportDocxBtn.addEventListener('click', async () => {
-            if (!window.DocxExporter || typeof window.DocxExporter.exportMarkdownToDocx !== 'function') {
-                console.warn('DocxExporter no disponible');
-                updateDocxStatus(getTranslation('docx_export_error', 'Error durante la exportación a DOCX.'));
-                return;
-            }
-
-            const exporter = window.DocxExporter;
-            const rawMarkdown = (markdownEditor && typeof markdownEditor.getValue === 'function')
-                ? markdownEditor.getValue()
-                : '';
-            const prepared = (exporter.trimInlineMath ? exporter.trimInlineMath(rawMarkdown) : rawMarkdown).trim();
-            if (!prepared) {
-                alert(getTranslation('no_content', 'No hay contenido para exportar.'));
-                updateDocxStatus('');
-                return;
-            }
-
-            const currentDoc = docs.find(d => d.id === currentId);
-            const baseName = currentDoc?.name ? String(currentDoc.name).replace(/\.[^.]+$/, '') : 'documento';
-            const outputFilename = `${baseName || 'documento'}.docx`;
-
-            const disableClasses = ['opacity-70', 'pointer-events-none'];
-            exportDocxBtn.disabled = true;
-            exportDocxBtn.classList.add(...disableClasses);
-            try {
-                await exporter.exportMarkdownToDocx({
-                    markdown: rawMarkdown,
-                    outputFilename,
-                    onStatus: updateDocxStatus,
-                    onNotification: (message) => {
-                        if (message) {
-                            alert(message);
-                        }
-                    },
-                });
-            } catch (err) {
-                console.error('No se pudo exportar a DOCX:', err);
-                updateDocxStatus(getTranslation('docx_export_error', 'Error durante la exportación a DOCX.'));
-            } finally {
-                exportDocxBtn.disabled = false;
-                exportDocxBtn.classList.remove(...disableClasses);
-            }
-        });
-    }
 
     clearAllBtn.addEventListener('click', () => toggleClearModal(true));
     confirmClearBtn.addEventListener('click', () => {

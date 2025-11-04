@@ -1,10 +1,32 @@
 /*
-  DOCX export helper for EdiMarkWeb.
+  Pandoc exporter for EdiMarkWeb.
   Reuses the Pandoc WASM bridge from MDAITex (pandoc-wasm.js).
 */
 import { pandoc } from './pandoc-wasm.js';
 
-const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const FORMATS = {
+  docx: {
+    mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    defaultFilename: 'documento.docx',
+    preparingKey: 'docx_export_preparing',
+    preparingFallback: 'Preparando DOCX, espera...',
+    doneKey: 'docx_export_done',
+    doneFallback: 'Exportación a DOCX completada.',
+    errorKey: 'docx_export_error',
+    errorFallback: 'Error durante la exportación a DOCX.',
+  },
+  odt: {
+    mime: 'application/vnd.oasis.opendocument.text',
+    defaultFilename: 'documento.odt',
+    preparingKey: 'odt_export_preparing',
+    preparingFallback: 'Preparando ODT, espera...',
+    doneKey: 'odt_export_done',
+    doneFallback: 'Exportación a ODT completada.',
+    errorKey: 'odt_export_error',
+    errorFallback: 'Error durante la exportación a ODT.',
+  },
+};
+
 const PANDOC_WASM_SOURCES = [
   { url: 'pandoc.b64', gzip: false },
   { url: 'pandoc.b64.gz', gzip: true },
@@ -161,43 +183,50 @@ function saveBlob(blob, filename) {
   }, 1000);
 }
 
-async function exportMarkdownToDocx({
+async function exportDocument({
+  format = 'docx',
   markdown = '',
   onStatus = () => {},
   onNotification = () => {},
-  outputFilename = 'documento.docx',
+  outputFilename,
 } = {}) {
+  const normalizedFormat = typeof format === 'string' ? format.toLowerCase() : 'docx';
+  const config = FORMATS[normalizedFormat];
+  if (!config) {
+    throw new Error(`Unsupported format: ${format}`);
+  }
+
   const normalized = normalizeNewlines(trimInlineMath(markdown || ''));
   if (!normalized.trim()) {
     const message = translate('no_content', 'No hay contenido para exportar.');
     throw new Error(message || 'No content');
   }
 
-  const preparingKey = 'docx_export_preparing';
-  triggerStatus(onStatus, preparingKey, 'Preparando DOCX, espera...');
+  triggerStatus(onStatus, config.preparingKey, config.preparingFallback);
 
   let iosTimer;
   if (isIOS) {
     const iosAdvice = translate('ios_specific_advice', '');
     if (iosAdvice) {
       iosTimer = setTimeout(() => {
-        triggerStatus(onStatus, preparingKey, 'Preparando DOCX, espera...', iosAdvice);
+        triggerStatus(onStatus, config.preparingKey, config.preparingFallback, iosAdvice);
       }, 1000);
     }
   }
 
   try {
     const base64 = await loadPandocWasm({ onStatus });
-    const resultadoBytes = await pandoc('-f markdown -t docx', normalized, base64);
+    const pandocArgs = `-f markdown -t ${normalizedFormat}`;
+    const resultadoBytes = await pandoc(pandocArgs, normalized, base64);
     if (iosTimer) clearTimeout(iosTimer);
 
-    const blob = new Blob([resultadoBytes], { type: DOCX_MIME });
-    saveBlob(blob, outputFilename);
+    const blob = new Blob([resultadoBytes], { type: config.mime });
+    saveBlob(blob, outputFilename || config.defaultFilename);
 
-    triggerStatus(onStatus, 'docx_export_done', 'Exportación a DOCX completada.');
+    triggerStatus(onStatus, config.doneKey, config.doneFallback);
   } catch (error) {
     if (iosTimer) clearTimeout(iosTimer);
-    triggerStatus(onStatus, 'docx_export_error', 'Error durante la exportación a DOCX.');
+    triggerStatus(onStatus, config.errorKey || 'export_error', config.errorFallback || 'Error durante la exportación.');
     if (isIOS) {
       triggerNotification(onNotification, 'ios_specific_advice', 'En iOS, si el problema persiste, prueba a cerrar y reiniciar el navegador.');
     }
@@ -205,9 +234,9 @@ async function exportMarkdownToDocx({
   }
 }
 
-window.DocxExporter = {
-  exportMarkdownToDocx,
+window.PandocExporter = {
+  exportDocument,
   trimInlineMath,
 };
 
-export { exportMarkdownToDocx, trimInlineMath };
+export { exportDocument, trimInlineMath };
