@@ -1,5 +1,8 @@
 # EdiMarkWeb
 
+> **Nota**  
+> Este repositorio ha sido trasladado a [edimarkweb/edimarkweb.github.io](https://github.com/edimarkweb/edimarkweb.github.io). La aplicación se publica ahora en [https://edimarkweb.github.io/](https://edimarkweb.github.io/).
+
 ![EdiMarkWeb Screenshot](logo.png)
 
 EdiMarkWeb es un potente editor Markdown basado en la web, diseñado para estudiantes, desarrolladores y creadores de contenido. Proporciona una experiencia fluida para escribir en Markdown con una vista previa de HTML en tiempo real, soporte completo de LaTeX para fórmulas matemáticas complejas y una intuitiva interfaz de múltiples documentos mediante pestañas.
